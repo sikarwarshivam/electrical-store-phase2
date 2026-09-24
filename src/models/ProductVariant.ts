@@ -39,6 +39,8 @@ export interface IProductVariant extends Document {
   minOrderQuantity: number;
   orderQuantityStep: number;
   status: VariantStatus;
+  statusBeforeArchive?: Exclude<VariantStatus, "ARCHIVED"> | null;
+  archivedByProduct: boolean;
   isDefault: boolean;
   trackInventory: boolean;
   imageUrl?: string;
@@ -124,6 +126,16 @@ const ProductVariantSchema = new Schema<IProductVariant>(
       type: String,
       enum: ["ACTIVE", "INACTIVE", "ARCHIVED"],
       default: "ACTIVE",
+      index: true,
+    },
+    statusBeforeArchive: {
+      type: String,
+      enum: ["ACTIVE", "INACTIVE", null],
+      default: null,
+    },
+    archivedByProduct: {
+      type: Boolean,
+      default: false,
       index: true,
     },
     isDefault: {
