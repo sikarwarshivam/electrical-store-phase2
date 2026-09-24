@@ -110,7 +110,6 @@ export async function getInventoryTransactions(variantId: string, limit = 20) {
 }
 
 
-const publicSpecKeys = ["wattage", "voltage", "ampere", "lumens", "colorTemperature", "ipRating"];
 
 export interface PublicVariant {
   id: string;
@@ -304,6 +303,23 @@ export async function getPublicCategories(): Promise<PublicCategory[]> {
     description: category.description || undefined,
     imageUrl: category.imageUrl || undefined,
     children: childMap.get(stringId(category._id)) || [],
+  }));
+}
+
+export async function getPublicBrands() {
+  await connectToDatabase();
+
+  const brands = await Brand.find({ isActive: true })
+    .select("_id name slug description logoUrl")
+    .sort({ sortOrder: 1, name: 1 })
+    .lean();
+
+  return brands.map((brand) => ({
+    id: stringId(brand._id),
+    name: brand.name,
+    slug: brand.slug,
+    description: brand.description || undefined,
+    logoUrl: brand.logoUrl || undefined,
   }));
 }
 
