@@ -1,12 +1,17 @@
 import Link from "next/link";
-import { Package, Plus, ExternalLink, Trash2 } from "lucide-react";
+import { Package, Plus, ExternalLink, Trash2, Undo2 } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CatalogMessage } from "@/components/admin/catalog-message";
 import { FieldLabel } from "@/components/admin/field-label";
-import { archiveProductAction, createProductAction, deleteProductAction } from "@/actions/catalog";
+import {
+  archiveProductAction,
+  createProductAction,
+  deleteProductAction,
+  unarchiveProductAction,
+} from "@/actions/catalog";
 import { getAdminBrands, getAdminCategories, getAdminProducts } from "@/lib/catalog";
 
 export const metadata = {
@@ -334,13 +339,22 @@ export default async function AdminProductsPage({
                               </Button>
                             </form>
                           ) : (
-                            <form action={deleteProductAction}>
-                              <input type="hidden" name="id" value={id(product._id)} />
-                              <Button type="submit" size="sm" variant="destructive">
-                                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                                Delete permanently
-                              </Button>
-                            </form>
+                            <>
+                              <form action={unarchiveProductAction}>
+                                <input type="hidden" name="id" value={id(product._id)} />
+                                <Button type="submit" size="sm" variant="outline">
+                                  <Undo2 className="mr-1.5 h-3.5 w-3.5" />
+                                  Unarchive
+                                </Button>
+                              </form>
+                              <form action={deleteProductAction}>
+                                <input type="hidden" name="id" value={id(product._id)} />
+                                <Button type="submit" size="sm" variant="destructive">
+                                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                                  Delete permanently
+                                </Button>
+                              </form>
+                            </>
                           )}
                         </div>
                       </div>
