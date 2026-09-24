@@ -53,7 +53,6 @@ export default async function ProductPage({
     return a.sortOrder - b.sortOrder;
   });
   const primaryImage = sortedImages[0]?.url;
-  const defaultVariant = product.variants[0];
 
   const groupedAttributes = new Map<string, typeof product.attributes>();
   for (const attribute of product.attributes) {
