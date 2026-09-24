@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { ArrowLeft, ChevronRight, Search } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -82,8 +83,7 @@ export default async function CategoryPage({
 
         {category.imageUrl ? (
           <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900">
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+<img
               src={category.imageUrl}
               alt={category.name}
               className="max-h-72 w-full object-cover"
