@@ -339,6 +339,17 @@ export default async function AdminProductDetailPage({
                 <span className="font-semibold">Add SKU / Variant</span>
               </div>
 
+              {product.productType === "SIMPLE" && variants.length > 0 ? (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+                  <p className="font-semibold">This product is currently Simple.</p>
+                  <p className="mt-1 text-xs leading-5">
+                    A Simple product supports one non-archived SKU. To add another variant, change
+                    <strong> Product type</strong> to <strong>Variable</strong> in Product Details, save the product,
+                    and then create the new SKU here.
+                  </p>
+                </div>
+              ) : null}
+
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
                   <FieldLabel htmlFor="variant-sku" hint="Globally unique; stored uppercase.">
@@ -525,7 +536,11 @@ export default async function AdminProductDetailPage({
                 </label>
               </div>
 
-              <Button type="submit" className="mt-4">
+              <Button
+                type="submit"
+                className="mt-4"
+                disabled={product.productType === "SIMPLE" && variants.length > 0}
+              >
                 Create Variant
               </Button>
             </form>
