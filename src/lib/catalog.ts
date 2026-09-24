@@ -535,10 +535,10 @@ export async function getPublicProducts(options: {
       .limit(5000)
       .lean();
   } else {
-    const sortQuery =
+    const sortQuery: Record<string, 1 | -1> =
       sort === "name"
-        ? { name: 1 as const }
-        : { createdAt: -1 as const };
+        ? { name: 1 }
+        : { createdAt: -1 };
 
     products = await Product.find(baseQuery)
       .populate("category", "name slug")
