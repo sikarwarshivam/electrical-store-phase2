@@ -212,7 +212,16 @@ export default async function AdminProductDetailPage({
               </div>
 
               <div>
-                <FieldLabel htmlFor="detail-status">Status</FieldLabel>
+                <FieldLabel
+                  htmlFor="detail-status"
+                  hint={
+                    product.status === "ACTIVE"
+                      ? "Published to the customer storefront."
+                      : "Draft and archived products stay hidden from the customer storefront. Add an active SKU, then set this to Active to publish."
+                  }
+                >
+                  Status
+                </FieldLabel>
                 <select
                   id="detail-status"
                   name="status"
