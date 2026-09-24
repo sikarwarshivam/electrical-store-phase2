@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { Menu, LogOut, ShieldCheck } from "lucide-react";
+import { Home, Menu, LogOut, ShieldCheck } from "lucide-react";
 import { useUIStore } from "@/stores/ui-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,16 @@ export function AdminHeader() {
         </span>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
+        <Link
+          href="/"
+          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-neutral-300 bg-white px-3 text-xs font-medium text-neutral-800 transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800"
+          title="View Customer Store"
+        >
+          <Home className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">View Store</span>
+        </Link>
+
         {user && (
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex flex-col text-right">
