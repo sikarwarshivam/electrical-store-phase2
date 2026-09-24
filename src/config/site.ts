@@ -28,8 +28,8 @@ export const siteConfig = {
   // Navigation Links
   mainNav: [
     { title: "Home", href: "/" },
-    { title: "Products", href: "/#products" },
-    { title: "Categories", href: "/#categories" },
+    { title: "Products", href: "/products" },
+    { title: "Categories", href: "/categories" },
     { title: "About Us", href: "/#about" },
     { title: "Contact", href: "/#contact" },
   ],
