@@ -1099,6 +1099,8 @@ export async function updateVariantAction(formData: FormData) {
     variant!.minOrderQuantity = parsed.minOrderQuantity;
     variant!.orderQuantityStep = parsed.orderQuantityStep;
     variant!.status = parsed.status;
+    variant!.statusBeforeArchive = null;
+    variant!.archivedByProduct = false;
     variant!.trackInventory = parsed.trackInventory;
     variant!.imageUrl = parsed.imageUrl || undefined;
     variant!.imageAlt = parsed.imageAlt || undefined;
