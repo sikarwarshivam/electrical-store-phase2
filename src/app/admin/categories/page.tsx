@@ -24,7 +24,7 @@ function categoryId(value: unknown): string {
 export default async function AdminCategoriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string; error?: string }>;
+  searchParams: Promise<{ success?: string; error?: string; edit?: string }>;
 }) {
   const params = await searchParams;
   const categories = await getAdminCategories();
@@ -190,11 +190,13 @@ export default async function AdminCategoriesPage({
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Link href={`#edit-${categoryId(category._id)}`}>
-                            <Button size="sm" variant="outline">
-                              <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                              Edit
-                            </Button>
+                          <Link
+                            href={`?edit=${encodeURIComponent(categoryId(category._id))}#edit-${categoryId(category._id)}`}
+                            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-neutral-300 bg-white px-3 text-xs font-medium text-neutral-800 transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800"
+                            aria-expanded={params.edit === categoryId(category._id)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Edit
                           </Link>
                           {category.isActive ? (
                             <form action={archiveCategoryAction}>
@@ -207,7 +209,7 @@ export default async function AdminCategoriesPage({
                         </div>
                       </div>
 
-                      <details id={`edit-${categoryId(category._id)}`} className="mt-4">
+                      <details id={`edit-${categoryId(category._id)}`} open={params.edit === categoryId(category._id)} className="mt-4">
                         <summary className="cursor-pointer text-xs font-medium text-amber-700 dark:text-amber-400">
                           Edit category fields
                         </summary>
