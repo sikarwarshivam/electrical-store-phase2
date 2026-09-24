@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Layers, Plus, Pencil } from "lucide-react";
+import { Layers, Plus, Pencil, Trash2 } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { CatalogMessage } from "@/components/admin/catalog-message";
 import {
   archiveCategoryAction,
   createCategoryAction,
+  deleteCategoryAction,
   updateCategoryAction,
 } from "@/actions/catalog";
 import { getAdminCategories } from "@/lib/catalog";
@@ -205,7 +206,15 @@ export default async function AdminCategoriesPage({
                                 Deactivate
                               </Button>
                             </form>
-                          ) : null}
+                          ) : (
+                            <form action={deleteCategoryAction}>
+                              <input type="hidden" name="id" value={categoryId(category._id)} />
+                              <Button size="sm" variant="destructive" type="submit">
+                                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                                Delete permanently
+                              </Button>
+                            </form>
+                          )}
                         </div>
                       </div>
 
