@@ -372,13 +372,15 @@ export async function getPublicProducts(options: {
   const pageSize = Math.min(Math.max(options.pageSize ?? 24, 1), 48);
   const page = Math.max(options.page ?? 1, 1);
 
-  const [activeCategoryDocs, activeBrandDocs] = await Promise.all([
+  const [activeCategoryDocs, activeBrandDocs, activeVariantProductIds] = await Promise.all([
     Category.find({ isActive: true }).select("_id").lean(),
     Brand.find({ isActive: true }).select("_id").lean(),
+    ProductVariant.distinct("product", { status: "ACTIVE" }),
   ]);
 
   let baseQuery: any = {
     status: "ACTIVE",
+    _id: { $in: activeVariantProductIds },
     category: { $in: activeCategoryDocs.map((item) => item._id) },
     $or: [
       { subcategory: null },
