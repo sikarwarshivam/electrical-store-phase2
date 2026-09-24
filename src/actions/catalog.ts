@@ -379,6 +379,60 @@ export async function archiveCategoryAction(formData: FormData) {
   redirectWithMessage("/admin/categories", "success", "Category deactivated.");
 }
 
+export async function deleteCategoryAction(formData: FormData) {
+  await getAdminActor();
+
+  const idResult = objectIdSchema.safeParse(text(formData, "id"));
+  if (!idResult.success) {
+    redirectWithMessage("/admin/categories", "error", "Invalid category identifier.");
+  }
+
+  try {
+    await connectToDatabase();
+
+    const category = await Category.findById(idResult.data).select("_id name isActive");
+    if (!category) {
+      redirectWithMessage("/admin/categories", "error", "Category not found.");
+    }
+
+    const [hasChildren, hasProducts] = await Promise.all([
+      Category.exists({ parent: idResult.data }),
+      Product.exists({
+        $or: [{ category: idResult.data }, { subcategory: idResult.data }],
+      }),
+    ]);
+
+    if (hasChildren) {
+      redirectWithMessage(
+        "/admin/categories",
+        "error",
+        "This category still has child categories. Remove or move them before permanent deletion."
+      );
+    }
+
+    if (hasProducts) {
+      redirectWithMessage(
+        "/admin/categories",
+        "error",
+        "This category is still referenced by products. Move those products to another category before permanent deletion."
+      );
+    }
+
+    await Category.findByIdAndDelete(idResult.data);
+
+    revalidatePath("/admin/categories");
+    revalidatePath("/admin/products");
+    revalidatePath("/admin");
+    revalidatePath("/");
+    redirectWithMessage("/admin/categories", "success", "Category deleted permanently.");
+  } catch (error) {
+    if (error instanceof Error) {
+      redirectWithMessage("/admin/categories", "error", error.message);
+    }
+    throw error;
+  }
+}
+
 export async function createBrandAction(formData: FormData) {
   await getAdminActor();
 
@@ -690,6 +744,55 @@ export async function archiveProductAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/");
   redirectWithMessage("/admin/products", "success", "Product archived.");
+}
+
+export async function deleteProductAction(formData: FormData) {
+  await getAdminActor();
+
+  const idResult = objectIdSchema.safeParse(text(formData, "id"));
+  if (!idResult.success) {
+    redirectWithMessage("/admin/products", "error", "Invalid product identifier.");
+  }
+
+  try {
+    await connectToDatabase();
+
+    const product = await Product.findById(idResult.data).select("_id name status");
+    if (!product) {
+      redirectWithMessage("/admin/products", "error", "Product not found.");
+    }
+
+    if (product!.status !== "ARCHIVED") {
+      redirectWithMessage(
+        "/admin/products",
+        "error",
+        "Archive the product first. Only archived products can be permanently deleted."
+      );
+    }
+
+    const variants = await ProductVariant.find({ product: idResult.data }).select("_id");
+    const variantIds = variants.map((variant) => variant._id);
+
+    if (variantIds.length > 0) {
+      await InventoryTransaction.deleteMany({ variant: { $in: variantIds } });
+      await Inventory.deleteMany({ variant: { $in: variantIds } });
+      await ProductVariant.deleteMany({ product: idResult.data });
+    }
+
+    await Product.findByIdAndDelete(idResult.data);
+
+    revalidatePath("/admin/products");
+    revalidatePath("/admin/products/" + idResult.data);
+    revalidatePath("/admin/inventory");
+    revalidatePath("/admin");
+    revalidatePath("/");
+    redirectWithMessage("/admin/products", "success", "Product deleted permanently.");
+  } catch (error) {
+    if (error instanceof Error) {
+      redirectWithMessage("/admin/products", "error", error.message);
+    }
+    throw error;
+  }
 }
 
 export async function createVariantAction(formData: FormData) {
