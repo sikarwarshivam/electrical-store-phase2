@@ -35,6 +35,7 @@ export interface IProduct extends Document {
   brand?: mongoose.Types.ObjectId | null;
   productType: ProductType;
   status: ProductStatus;
+  statusBeforeArchive?: Exclude<ProductStatus, "ARCHIVED"> | null;
   images: ProductImage[];
   attributes: ProductAttribute[];
   searchKeywords: string[];
@@ -100,6 +101,11 @@ const ProductSchema = new Schema<IProduct>(
       enum: ["DRAFT", "ACTIVE", "ARCHIVED"],
       default: "DRAFT",
       index: true,
+    },
+    statusBeforeArchive: {
+      type: String,
+      enum: ["DRAFT", "ACTIVE", null],
+      default: null,
     },
     images: {
       type: [ProductImageSchema],
