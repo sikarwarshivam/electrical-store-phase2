@@ -1,10 +1,10 @@
-import mongoose from "mongoose";
+import mongoose, { FilterQuery } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { Brand } from "@/models/Brand";
 import { Category } from "@/models/Category";
-import { Inventory } from "@/models/Inventory";
-import { Product } from "@/models/Product";
-import { ProductVariant } from "@/models/ProductVariant";
+import { Inventory, IInventory } from "@/models/Inventory";
+import { Product, IProduct } from "@/models/Product";
+import { ProductVariant, IProductVariant } from "@/models/ProductVariant";
 
 export async function getCatalogDashboardStats() {
   await connectToDatabase();
@@ -180,19 +180,61 @@ function publicStockStatus(
   return "IN_STOCK";
 }
 
+type PublicVariantSource = Pick<
+  IProductVariant,
+  | "_id"
+  | "sku"
+  | "title"
+  | "options"
+  | "attributes"
+  | "pricePaise"
+  | "mrpPaise"
+  | "unitOfSale"
+  | "minOrderQuantity"
+  | "orderQuantityStep"
+  | "status"
+  | "trackInventory"
+  | "imageUrl"
+  | "imageAlt"
+  | "isDefault"
+>;
+
+type PublicInventorySource = Pick<
+  IInventory,
+  "variant" | "availableQuantity" | "lowStockThreshold"
+>;
+
+type CatalogRef = {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  slug: string;
+  description?: string;
+  imageUrl?: string;
+  isActive?: boolean;
+  parent?: mongoose.Types.ObjectId | null;
+};
+
+type PublicProductSource = Pick<
+  IProduct,
+  "_id" | "name" | "slug" | "shortDescription" | "images" | "productType"
+> & {
+  category?: CatalogRef | null;
+  brand?: CatalogRef | null;
+};
+
 function publicVariant(
-  variant: any,
-  inventory?: any
+  variant: PublicVariantSource,
+  inventory?: PublicInventorySource
 ): PublicVariant {
   return {
     id: stringId(variant._id),
     sku: variant.sku,
     title: variant.title || "",
-    options: (variant.options || []).map((option: any) => ({
+    options: variant.options.map((option) => ({
       name: option.name,
       value: option.value,
     })),
-    attributes: (variant.attributes || []).map((attribute: any) => ({
+    attributes: variant.attributes.map((attribute) => ({
       key: attribute.key,
       label: attribute.label,
       value: attribute.value,
@@ -215,25 +257,36 @@ function publicVariant(
 }
 
 function publicCard(
-  product: any,
-  variants: any[],
-  inventoryMap: Map<string, any>
+  product: PublicProductSource,
+  variants: PublicVariantSource[],
+  inventoryMap: Map<string, PublicInventorySource>
 ): PublicProductCard {
-  const normalizedVariants = variants.map((variant) => publicVariant(variant, inventoryMap.get(stringId(variant._id))));
+  const normalizedVariants = variants.map((variant) =>
+    publicVariant(variant, inventoryMap.get(stringId(variant._id)))
+  );
   const defaultVariant =
-    normalizedVariants.find((variant) => variants.find((item) => stringId(item._id) === variant.id)?.isDefault) ||
-    normalizedVariants[0];
-  const lowestPrice = Math.min(...normalizedVariants.map((variant) => variant.pricePaise));
-  const lowestPriceVariant = normalizedVariants.find((variant) => variant.pricePaise === lowestPrice) || defaultVariant;
-  const hasStock = normalizedVariants.some((variant) => variant.stockStatus === "IN_STOCK");
-  const hasLowStock = normalizedVariants.some((variant) => variant.stockStatus === "LOW_STOCK");
+    normalizedVariants.find((variant) =>
+      variants.find((item) => stringId(item._id) === variant.id)?.isDefault
+    ) || normalizedVariants[0];
+  const lowestPrice = Math.min(
+    ...normalizedVariants.map((variant) => variant.pricePaise)
+  );
+  const lowestPriceVariant =
+    normalizedVariants.find((variant) => variant.pricePaise === lowestPrice) ||
+    defaultVariant;
+  const hasStock = normalizedVariants.some(
+    (variant) => variant.stockStatus === "IN_STOCK"
+  );
+  const hasLowStock = normalizedVariants.some(
+    (variant) => variant.stockStatus === "LOW_STOCK"
+  );
 
   return {
     id: stringId(product._id),
     name: product.name,
     slug: product.slug,
     shortDescription: product.shortDescription || undefined,
-    images: (product.images || []).map((image: any) => ({
+    images: product.images.map((image) => ({
       url: image.url,
       alt: image.alt || product.name,
       isPrimary: Boolean(image.isPrimary),
@@ -248,10 +301,15 @@ function publicCard(
       : undefined,
     isVariable: product.productType === "VARIABLE",
     pricePaise: lowestPriceVariant?.pricePaise ?? lowestPrice,
-    mrpPaise: product.productType === "SIMPLE"
-      ? (defaultVariant?.mrpPaise ?? lowestPrice)
-      : (lowestPriceVariant?.mrpPaise ?? lowestPrice),
-    stockStatus: hasStock ? "IN_STOCK" : hasLowStock ? "LOW_STOCK" : "OUT_OF_STOCK",
+    mrpPaise:
+      product.productType === "SIMPLE"
+        ? (defaultVariant?.mrpPaise ?? lowestPrice)
+        : (lowestPriceVariant?.mrpPaise ?? lowestPrice),
+    stockStatus: hasStock
+      ? "IN_STOCK"
+      : hasLowStock
+        ? "LOW_STOCK"
+        : "OUT_OF_STOCK",
     variantCount: normalizedVariants.length,
   };
 }
@@ -378,7 +436,7 @@ export async function getPublicProducts(options: {
     ProductVariant.distinct("product", { status: "ACTIVE" }),
   ]);
 
-  let baseQuery: any = {
+  let baseQuery: FilterQuery<IProduct> = {
     status: "ACTIVE",
     _id: { $in: activeVariantProductIds },
     category: { $in: activeCategoryDocs.map((item) => item._id) },
@@ -565,7 +623,7 @@ export async function getPublicProducts(options: {
     : [];
 
   const inventoryMap = new Map(inventories.map((inventory) => [stringId(inventory.variant), inventory]));
-  const variantsByProduct = new Map<string, any[]>();
+  const variantsByProduct = new Map<string, PublicVariantSource[]>();
 
   for (const variant of variants) {
     const productId = stringId(variant.product);
@@ -617,9 +675,9 @@ export async function getPublicProductBySlug(slug: string) {
 
   if (!product || !product.category) return null;
 
-  const category = product.category as any;
-  const subcategory = product.subcategory as any;
-  const brand = product.brand as any;
+  const category = product.category as unknown as CatalogRef;
+  const subcategory = product.subcategory as unknown as CatalogRef | null;
+  const brand = product.brand as unknown as CatalogRef | null;
 
   if (!category.isActive || (subcategory && !subcategory.isActive) || (brand && !brand.isActive)) {
     return null;
@@ -658,13 +716,13 @@ export async function getPublicProductBySlug(slug: string) {
     slug: product.slug,
     shortDescription: product.shortDescription || "",
     description: product.description || "",
-    images: (product.images || []).map((image: any) => ({
+    images: (product.images || []).map((image) => ({
       url: image.url,
       alt: image.alt || product.name,
       isPrimary: Boolean(image.isPrimary),
       sortOrder: image.sortOrder ?? 0,
     })),
-    attributes: (product.attributes || []).map((attribute: any) => ({
+    attributes: (product.attributes || []).map((attribute) => ({
       key: attribute.key,
       label: attribute.label,
       value: attribute.value,
