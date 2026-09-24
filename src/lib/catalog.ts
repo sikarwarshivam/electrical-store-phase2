@@ -518,18 +518,19 @@ export async function getPublicProducts(options: {
       return { products: [], total: 0, page: 1, pageSize, totalPages: 0 };
     }
 
-    let scopedIds = [selected._id];
-    if (!selected.parent) {
+    if (selected.parent) {
+      baseQuery.subcategory = selected._id;
+    } else {
       const children = await Category.find({
         parent: selected._id,
         isActive: true,
       })
         .select("_id")
         .lean();
-      scopedIds = scopedIds.concat(children.map((child) => child._id));
-    }
 
-    baseQuery.category = { $in: scopedIds };
+      const scopedIds = [selected._id, ...children.map((child) => child._id)];
+      baseQuery.category = { $in: scopedIds };
+    }
   }
 
   if (options.brandSlug) {
