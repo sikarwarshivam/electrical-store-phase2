@@ -36,6 +36,7 @@ export interface IProduct extends Document {
   productType: ProductType;
   status: ProductStatus;
   statusBeforeArchive?: Exclude<ProductStatus, "ARCHIVED"> | null;
+  statusBeforeVariantArchive?: "ACTIVE" | null;
   images: ProductImage[];
   attributes: ProductAttribute[];
   searchKeywords: string[];
@@ -105,6 +106,11 @@ const ProductSchema = new Schema<IProduct>(
     statusBeforeArchive: {
       type: String,
       enum: ["DRAFT", "ACTIVE", null],
+      default: null,
+    },
+    statusBeforeVariantArchive: {
+      type: String,
+      enum: ["ACTIVE", null],
       default: null,
     },
     images: {
