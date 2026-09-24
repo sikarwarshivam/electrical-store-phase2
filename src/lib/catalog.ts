@@ -1,4 +1,4 @@
-import mongoose, { FilterQuery } from "mongoose";
+import mongoose, { QueryFilter } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { Brand } from "@/models/Brand";
 import { Category } from "@/models/Category";
@@ -218,9 +218,50 @@ type PublicProductSource = Pick<
   IProduct,
   "_id" | "name" | "slug" | "shortDescription" | "images" | "productType"
 > & {
-  category?: CatalogRef | null;
-  brand?: CatalogRef | null;
+  category: IProduct["category"] | CatalogRef | null;
+  brand?: IProduct["brand"] | CatalogRef | null;
 };
+
+function populatedCatalogRef(value: unknown): CatalogRef | undefined {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("_id" in value) ||
+    !("name" in value) ||
+    !("slug" in value)
+  ) {
+    return undefined;
+  }
+
+  const ref = value as {
+    _id: mongoose.Types.ObjectId;
+    name: unknown;
+    slug: unknown;
+    description?: unknown;
+    imageUrl?: unknown;
+    isActive?: unknown;
+    parent?: unknown;
+  };
+
+  if (typeof ref.name !== "string" || typeof ref.slug !== "string") {
+    return undefined;
+  }
+
+  return {
+    _id: ref._id,
+    name: ref.name,
+    slug: ref.slug,
+    description: typeof ref.description === "string" ? ref.description : undefined,
+    imageUrl: typeof ref.imageUrl === "string" ? ref.imageUrl : undefined,
+    isActive: typeof ref.isActive === "boolean" ? ref.isActive : undefined,
+    parent:
+      ref.parent instanceof mongoose.Types.ObjectId
+        ? ref.parent
+        : ref.parent === null
+          ? null
+          : undefined,
+  };
+}
 
 function publicVariant(
   variant: PublicVariantSource,
@@ -293,11 +334,14 @@ function publicCard(
       sortOrder: image.sortOrder ?? 0,
     })),
     category: {
-      name: product.category?.name || "Electrical",
-      slug: product.category?.slug || "",
+      name: populatedCatalogRef(product.category)?.name || "Electrical",
+      slug: populatedCatalogRef(product.category)?.slug || "",
     },
-    brand: product.brand
-      ? { name: product.brand.name, slug: product.brand.slug }
+    brand: populatedCatalogRef(product.brand)
+      ? {
+          name: populatedCatalogRef(product.brand)!.name,
+          slug: populatedCatalogRef(product.brand)!.slug,
+        }
       : undefined,
     isVariable: product.productType === "VARIABLE",
     pricePaise: lowestPriceVariant?.pricePaise ?? lowestPrice,
@@ -436,7 +480,7 @@ export async function getPublicProducts(options: {
     ProductVariant.distinct("product", { status: "ACTIVE" }),
   ]);
 
-  let baseQuery: FilterQuery<IProduct> = {
+  const baseQuery: QueryFilter<IProduct> = {
     status: "ACTIVE",
     _id: { $in: activeVariantProductIds },
     category: { $in: activeCategoryDocs.map((item) => item._id) },
