@@ -1,5 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import { ArrowRight, Database, Search, ShieldCheck, SlidersHorizontal, Zap, FolderTree } from "lucide-react";
+import { ArrowRight, FolderTree, Search, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { siteConfig } from "@/config/site";
 import { PageContainer } from "@/components/layout/page-container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
