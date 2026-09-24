@@ -693,6 +693,7 @@ export async function updateProductAction(formData: FormData) {
       : null;
     existing!.productType = input.productType;
     existing!.status = input.status;
+    existing!.statusBeforeVariantArchive = null;
     existing!.images = input.images;
     existing!.attributes = input.attributes;
     existing!.searchKeywords = input.searchKeywords;
@@ -743,6 +744,7 @@ export async function archiveProductAction(formData: FormData) {
   await Product.findByIdAndUpdate(idResult.data, {
     status: "ARCHIVED",
     statusBeforeArchive: product!.status,
+    statusBeforeVariantArchive: null,
   });
 
   const variants = await ProductVariant.find({
@@ -783,7 +785,7 @@ export async function unarchiveProductAction(formData: FormData) {
   try {
     await connectToDatabase();
     const product = await Product.findById(idResult.data).select(
-      "_id status statusBeforeArchive"
+      "_id status statusBeforeArchive statusBeforeVariantArchive"
     );
     if (!product) {
       redirectWithMessage("/admin/products", "error", "Product not found.");
@@ -792,21 +794,31 @@ export async function unarchiveProductAction(formData: FormData) {
       redirectWithMessage("/admin/products", "error", "Product is not archived.");
     }
 
-    const restoreStatus =
-      product!.statusBeforeArchive === "ACTIVE" || product!.statusBeforeArchive === "DRAFT"
-        ? product!.statusBeforeArchive
+    const allArchivedVariants = await ProductVariant.find({
+      product: idResult.data,
+      status: "ARCHIVED",
+    }).select("_id statusBeforeArchive archivedByProduct isDefault");
+
+    const hasStoredProductStatus =
+      product!.statusBeforeArchive === "ACTIVE" || product!.statusBeforeArchive === "DRAFT";
+
+    // Older archived products predate status restoration metadata. When metadata is
+    // absent, restoring them as Active matches the old "published product" workflow.
+    const restoreStatus = hasStoredProductStatus
+      ? product!.statusBeforeArchive!
+      : allArchivedVariants.length > 0
+        ? "ACTIVE"
         : "DRAFT";
 
     await Product.findByIdAndUpdate(idResult.data, {
       status: restoreStatus,
       statusBeforeArchive: null,
+      statusBeforeVariantArchive: null,
     });
 
-    const archivedVariants = await ProductVariant.find({
-      product: idResult.data,
-      status: "ARCHIVED",
-      archivedByProduct: true,
-    }).select("_id statusBeforeArchive");
+    const archivedVariants = allArchivedVariants.filter(
+      (variant) => variant.archivedByProduct || !variant.statusBeforeArchive
+    );
 
     if (archivedVariants.length > 0) {
       await ProductVariant.bulkWrite(
@@ -1178,7 +1190,13 @@ export async function archiveVariantAction(formData: FormData) {
   });
 
   if (remainingActiveVariants === 0) {
-    await Product.findByIdAndUpdate(productId, { status: "DRAFT" });
+    const product = await Product.findById(productId).select("status");
+    if (product?.status === "ACTIVE") {
+      await Product.findByIdAndUpdate(productId, {
+        status: "DRAFT",
+        statusBeforeVariantArchive: "ACTIVE",
+      });
+    }
   }
 
   revalidatePath(`/admin/products/${productId}`);
@@ -1224,6 +1242,21 @@ export async function unarchiveVariantAction(formData: FormData) {
     if (restoreStatus === "ACTIVE" && !hasDefaultActiveVariant) {
       await ProductVariant.updateMany({ product: productId }, { isDefault: false });
       await ProductVariant.findByIdAndUpdate(idResult.data, { isDefault: true });
+    }
+
+    if (restoreStatus === "ACTIVE") {
+      const product = await Product.findById(productId).select(
+        "_id status statusBeforeVariantArchive"
+      );
+      if (
+        product?.status === "DRAFT" &&
+        product.statusBeforeVariantArchive === "ACTIVE"
+      ) {
+        await Product.findByIdAndUpdate(productId, {
+          status: "ACTIVE",
+          statusBeforeVariantArchive: null,
+        });
+      }
     }
 
     revalidatePath(`/admin/products/${productId}`);
