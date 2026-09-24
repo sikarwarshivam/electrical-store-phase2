@@ -34,9 +34,7 @@ export function ProductPurchasePanel({
   variants: PublicVariant[];
 }) {
   const { addItem } = useCart();
-  const defaultVariant = variants.find((variant) => {
-    return variants.findIndex((candidate) => candidate.id === variant.id) === 0 || variant.stockStatus === "IN_STOCK";
-  }) || variants[0];
+  const defaultVariant = variants.find((variant) => variant.stockStatus === "IN_STOCK") || variants[0];
 
   const [selectedId, setSelectedId] = useState(defaultVariant.id);
   const selected = useMemo(
