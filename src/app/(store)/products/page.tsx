@@ -100,16 +100,16 @@ export default async function ProductsPage({
                 className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
               >
                 <option value="">All categories</option>
-                {categories.map((category) => (
-                  <optgroup key={category.id} label={category.name}>
-                    <option value={category.slug}>{category.name}</option>
-                    {category.children.map((child) => (
-                      <option key={child.id} value={child.slug}>
-                        {"  ↳ " + child.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
+                {categories.flatMap((category) => [
+                  <option key={category.id} value={category.slug}>
+                    {category.name}
+                  </option>,
+                  ...category.children.map((child) => (
+                    <option key={child.id} value={child.slug}>
+                      {"↳ " + child.name}
+                    </option>
+                  )),
+                ])}
               </select>
             </label>
 
