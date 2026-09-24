@@ -480,6 +480,15 @@ export async function getPublicProducts(options: {
     ProductVariant.distinct("product", { status: "ACTIVE" }),
   ]);
 
+  const andConditions: QueryFilter<IProduct>[] = [
+    {
+      $or: [
+        { brand: null },
+        { brand: { $in: activeBrandDocs.map((item) => item._id) } },
+      ],
+    },
+  ];
+
   const baseQuery: QueryFilter<IProduct> = {
     status: "ACTIVE",
     _id: { $in: activeVariantProductIds },
@@ -488,18 +497,13 @@ export async function getPublicProducts(options: {
       { subcategory: null },
       { subcategory: { $in: activeCategoryDocs.map((item) => item._id) } },
     ],
-    $and: [
-      {
-        $or: [
-          { brand: null },
-          { brand: { $in: activeBrandDocs.map((item) => item._id) } },
-        ],
-      },
-    ],
+    $and: andConditions,
   };
 
   if (options.excludeProductId && mongoose.Types.ObjectId.isValid(options.excludeProductId)) {
-    baseQuery._id = { $ne: new mongoose.Types.ObjectId(options.excludeProductId) };
+    andConditions.push({
+      _id: { $ne: new mongoose.Types.ObjectId(options.excludeProductId) },
+    });
   }
 
   if (options.categorySlug) {
@@ -540,7 +544,7 @@ export async function getPublicProducts(options: {
       return { products: [], total: 0, page: 1, pageSize, totalPages: 0 };
     }
 
-    baseQuery.$and.push({ brand: selectedBrand._id });
+    andConditions.push({ brand: selectedBrand._id });
   }
 
   const idSets: string[][] = [];
@@ -618,10 +622,9 @@ export async function getPublicProducts(options: {
     if (matchedIds.length === 0) {
       return { products: [], total: 0, page: 1, pageSize, totalPages: 0 };
     }
-    baseQuery._id = {
-      ...(baseQuery._id || {}),
-      $in: matchedIds.map((id) => new mongoose.Types.ObjectId(id)),
-    };
+    andConditions.push({
+      _id: { $in: matchedIds.map((id) => new mongoose.Types.ObjectId(id)) },
+    });
   }
 
   const total = await Product.countDocuments(baseQuery);
