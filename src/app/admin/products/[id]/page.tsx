@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Boxes, Package, Plus, Save, Archive } from "lucide-react";
+import { ArrowLeft, Boxes, Package, Plus, Save, Archive, Undo2 } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { FieldLabel } from "@/components/admin/field-label";
 import {
   archiveVariantAction,
   createVariantAction,
+  unarchiveProductAction,
+  unarchiveVariantAction,
   updateProductAction,
   updateVariantAction,
 } from "@/actions/catalog";
@@ -75,12 +77,23 @@ export default async function AdminProductDetailPage({
       title={product.name}
       description={`Manage product metadata, variants, SKU pricing, and inventory setup.`}
       actions={
-        <Link href="/admin/products">
-          <Button variant="outline">
-            <ArrowLeft className="mr-1.5 h-4 w-4" />
-            Back to Products
-          </Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/admin/products">
+            <Button variant="outline">
+              <ArrowLeft className="mr-1.5 h-4 w-4" />
+              Back to Products
+            </Button>
+          </Link>
+          {product.status === "ARCHIVED" ? (
+            <form action={unarchiveProductAction}>
+              <input type="hidden" name="id" value={productId} />
+              <Button type="submit" variant="outline">
+                <Undo2 className="mr-1.5 h-4 w-4" />
+                Unarchive Product
+              </Button>
+            </form>
+          ) : null}
+        </div>
       }
     >
       <CatalogMessage success={messages.success} error={messages.error} />
@@ -786,14 +799,25 @@ export default async function AdminProductDetailPage({
                             </div>
                           </div>
 
-                          <form action={archiveVariantAction}>
-                            <input type="hidden" name="id" value={id(variant._id)} />
-                            <input type="hidden" name="productId" value={productId} />
-                            <Button type="submit" variant="destructive" className="w-full">
-                              <Archive className="mr-1.5 h-4 w-4" />
-                              Archive SKU
-                            </Button>
-                          </form>
+                          {variant.status === "ARCHIVED" ? (
+                            <form action={unarchiveVariantAction}>
+                              <input type="hidden" name="id" value={id(variant._id)} />
+                              <input type="hidden" name="productId" value={productId} />
+                              <Button type="submit" variant="outline" className="w-full">
+                                <Undo2 className="mr-1.5 h-4 w-4" />
+                                Unarchive SKU
+                              </Button>
+                            </form>
+                          ) : (
+                            <form action={archiveVariantAction}>
+                              <input type="hidden" name="id" value={id(variant._id)} />
+                              <input type="hidden" name="productId" value={productId} />
+                              <Button type="submit" variant="destructive" className="w-full">
+                                <Archive className="mr-1.5 h-4 w-4" />
+                                Archive SKU
+                              </Button>
+                            </form>
+                          )}
                         </div>
                       </div>
                     </details>
