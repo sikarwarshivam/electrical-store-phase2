@@ -732,11 +732,38 @@ export async function archiveProductAction(formData: FormData) {
   }
 
   await connectToDatabase();
-  await Product.findByIdAndUpdate(idResult.data, { status: "ARCHIVED" });
-  await ProductVariant.updateMany(
-    { product: idResult.data, status: { $ne: "ARCHIVED" } },
-    { status: "ARCHIVED" }
-  );
+  const product = await Product.findById(idResult.data).select("_id status");
+  if (!product) {
+    redirectWithMessage("/admin/products", "error", "Product not found.");
+  }
+  if (product!.status === "ARCHIVED") {
+    redirectWithMessage("/admin/products", "error", "Product is already archived.");
+  }
+
+  await Product.findByIdAndUpdate(idResult.data, {
+    status: "ARCHIVED",
+    statusBeforeArchive: product!.status,
+  });
+
+  const variants = await ProductVariant.find({
+    product: idResult.data,
+    status: { $ne: "ARCHIVED" },
+  }).select("_id status");
+
+  if (variants.length > 0) {
+    await ProductVariant.bulkWrite(
+      variants.map((variant) => ({
+        updateOne: {
+          filter: { _id: variant._id },
+          update: {
+            status: "ARCHIVED",
+            statusBeforeArchive: variant.status,
+            archivedByProduct: true,
+          },
+        },
+      }))
+    );
+  }
 
   revalidatePath("/admin/products");
   revalidatePath(`/admin/products/${idResult.data}`);
@@ -744,6 +771,75 @@ export async function archiveProductAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/");
   redirectWithMessage("/admin/products", "success", "Product archived.");
+}
+
+export async function unarchiveProductAction(formData: FormData) {
+  await getAdminActor();
+  const idResult = objectIdSchema.safeParse(text(formData, "id"));
+  if (!idResult.success) {
+    redirectWithMessage("/admin/products", "error", "Invalid product identifier.");
+  }
+
+  try {
+    await connectToDatabase();
+    const product = await Product.findById(idResult.data).select(
+      "_id status statusBeforeArchive"
+    );
+    if (!product) {
+      redirectWithMessage("/admin/products", "error", "Product not found.");
+    }
+    if (product!.status !== "ARCHIVED") {
+      redirectWithMessage("/admin/products", "error", "Product is not archived.");
+    }
+
+    const restoreStatus =
+      product!.statusBeforeArchive === "ACTIVE" || product!.statusBeforeArchive === "DRAFT"
+        ? product!.statusBeforeArchive
+        : "DRAFT";
+
+    await Product.findByIdAndUpdate(idResult.data, {
+      status: restoreStatus,
+      statusBeforeArchive: null,
+    });
+
+    const archivedVariants = await ProductVariant.find({
+      product: idResult.data,
+      status: "ARCHIVED",
+      archivedByProduct: true,
+    }).select("_id statusBeforeArchive");
+
+    if (archivedVariants.length > 0) {
+      await ProductVariant.bulkWrite(
+        archivedVariants.map((variant) => ({
+          updateOne: {
+            filter: { _id: variant._id },
+            update: {
+              status:
+                variant.statusBeforeArchive === "INACTIVE" ? "INACTIVE" : "ACTIVE",
+              statusBeforeArchive: null,
+              archivedByProduct: false,
+            },
+          },
+        }))
+      );
+    }
+
+    revalidatePath("/admin/products");
+    revalidatePath(`/admin/products/${idResult.data}`);
+    revalidatePath("/admin/inventory");
+    revalidatePath("/admin");
+    revalidatePath("/");
+    redirectWithMessage(
+      "/admin/products",
+      "success",
+      `Product unarchived as ${restoreStatus === "ACTIVE" ? "Active" : "Draft"}.`
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      redirectWithMessage("/admin/products", "error", error.message);
+    }
+    throw error;
+  }
 }
 
 export async function deleteProductAction(formData: FormData) {
@@ -1042,11 +1138,7 @@ export async function archiveVariantAction(formData: FormData) {
   const productId = text(formData, "productId");
   const idResult = objectIdSchema.safeParse(id);
   if (!idResult.success) {
-    redirectWithMessage(
-      `/admin/products/${productId}`,
-      "error",
-      "Invalid variant identifier."
-    );
+    redirectWithMessage(`/admin/products/${productId}`, "error", "Invalid variant identifier.");
   }
 
   await connectToDatabase();
@@ -1057,9 +1149,14 @@ export async function archiveVariantAction(formData: FormData) {
   if (!variant) {
     redirectWithMessage(`/admin/products/${productId}`, "error", "Variant not found.");
   }
+  if (variant!.status === "ARCHIVED") {
+    redirectWithMessage(`/admin/products/${productId}`, "error", "Variant is already archived.");
+  }
 
   await ProductVariant.findByIdAndUpdate(idResult.data, {
     status: "ARCHIVED",
+    statusBeforeArchive: variant!.status,
+    archivedByProduct: false,
     isDefault: false,
   });
 
@@ -1087,13 +1184,60 @@ export async function archiveVariantAction(formData: FormData) {
   revalidatePath(`/admin/products/${productId}`);
   revalidatePath("/admin/inventory");
   revalidatePath("/admin");
-  redirectWithMessage(
-    `/admin/products/${productId}`,
-    "success",
-    "Variant archived."
-  );
+  redirectWithMessage(`/admin/products/${productId}`, "success", "Variant archived.");
 }
 
+export async function unarchiveVariantAction(formData: FormData) {
+  await getAdminActor();
+  const id = text(formData, "id");
+  const productId = text(formData, "productId");
+  const idResult = objectIdSchema.safeParse(id);
+  if (!idResult.success) {
+    redirectWithMessage(`/admin/products/${productId}`, "error", "Invalid variant identifier.");
+  }
+
+  try {
+    await connectToDatabase();
+    const variant = await ProductVariant.findOne({
+      _id: idResult.data,
+      product: productId,
+    });
+    if (!variant) {
+      redirectWithMessage(`/admin/products/${productId}`, "error", "Variant not found.");
+    }
+    if (variant!.status !== "ARCHIVED") {
+      redirectWithMessage(`/admin/products/${productId}`, "error", "Variant is not archived.");
+    }
+
+    const restoreStatus = variant!.statusBeforeArchive === "INACTIVE" ? "INACTIVE" : "ACTIVE";
+    await ProductVariant.findByIdAndUpdate(idResult.data, {
+      status: restoreStatus,
+      statusBeforeArchive: null,
+      archivedByProduct: false,
+    });
+
+    const hasDefaultActiveVariant = await ProductVariant.exists({
+      product: productId,
+      status: "ACTIVE",
+      isDefault: true,
+    });
+    if (restoreStatus === "ACTIVE" && !hasDefaultActiveVariant) {
+      await ProductVariant.updateMany({ product: productId }, { isDefault: false });
+      await ProductVariant.findByIdAndUpdate(idResult.data, { isDefault: true });
+    }
+
+    revalidatePath(`/admin/products/${productId}`);
+    revalidatePath("/admin/inventory");
+    revalidatePath("/admin");
+    revalidatePath("/");
+    redirectWithMessage(`/admin/products/${productId}`, "success", "Variant unarchived.");
+  } catch (error) {
+    if (error instanceof Error) {
+      redirectWithMessage(`/admin/products/${productId}`, "error", error.message);
+    }
+    throw error;
+  }
+}
 export async function adjustInventoryAction(formData: FormData) {
   const actor = await getAdminActor();
 
