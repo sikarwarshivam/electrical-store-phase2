@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Heart } from "lucide-react";
 import { toggleWishlistAction } from "@/actions/wishlist";
 
