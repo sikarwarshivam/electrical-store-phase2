@@ -239,11 +239,6 @@ export async function reconcileCartAction(
     }
 
     const priceChanged = item.unitPricePaise !== variant.pricePaise;
-    if (priceChanged) {
-      lineIssues.push(
-        "The price changed after this item was added. The current store price is shown."
-      );
-    }
 
     const primaryImage =
       variant.imageUrl ||
