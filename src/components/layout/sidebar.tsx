@@ -23,7 +23,7 @@ export function Sidebar() {
       {/* Sidebar Container */}
       <aside
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-50 flex w-[min(18rem,calc(100vw-1rem))] flex-col border-r border-neutral-200 bg-white transition-transform duration-200 ease-in-out dark:border-neutral-800 dark:bg-neutral-950 md:static md:translate-x-0",
+          "fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col border-r border-neutral-200 bg-white transition-transform duration-200 ease-in-out dark:border-neutral-800 dark:bg-neutral-950 md:static md:translate-x-0",
           isAdminSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
