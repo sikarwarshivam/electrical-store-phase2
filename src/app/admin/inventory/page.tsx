@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { CatalogMessage } from "@/components/admin/catalog-message";
 import { FieldLabel } from "@/components/admin/field-label";
 import { adjustInventoryAction } from "@/actions/catalog";
+import { cleanupOrphanInventoryAction } from "@/actions/catalog";
 import { getInventoryRows } from "@/lib/catalog";
 import { formatINRFromPaise } from "@/lib/money";
 
@@ -46,7 +47,9 @@ export default async function AdminInventoryPage({
 }) {
   const params = await searchParams;
   const rows = (await getInventoryRows()) as unknown as InventoryRow[];
-  const trackedRows = rows.filter((row) => row.trackInventory);
+  const orphanRows = rows.filter((row) => !row.variant);
+  const validRows = rows.filter((row) => row.variant);
+  const trackedRows = validRows.filter((row) => row.trackInventory);
   const lowStockCount = trackedRows.filter(
     (row) =>
       row.availableQuantity > 0 &&
@@ -63,11 +66,29 @@ export default async function AdminInventoryPage({
       actions={
         <Badge variant="outline">
           <Boxes className="mr-1.5 h-3.5 w-3.5" />
-          {rows.length} SKU records
+          {validRows.length} SKU records
         </Badge>
       }
     >
       <CatalogMessage success={params.success} error={params.error} />
+
+      {orphanRows.length > 0 ? (
+        <div className="mb-6 flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/20 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-red-800 dark:text-red-200">
+              {orphanRows.length} orphan inventory record{orphanRows.length === 1 ? "" : "s"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-red-700/80 dark:text-red-300/80">
+              These records no longer point to an existing SKU, so they cannot be sold or adjusted.
+            </p>
+          </div>
+          <form action={cleanupOrphanInventoryAction}>
+            <Button type="submit" variant="destructive">Clean up orphan records</Button>
+          </form>
+        </div>
+      ) : null}
+
+
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Card>
@@ -98,7 +119,7 @@ export default async function AdminInventoryPage({
           <CardTitle className="text-base">Stock Ledger</CardTitle>
         </CardHeader>
         <CardContent>
-          {rows.length === 0 ? (
+          {validRows.length === 0 ? (
             <div className="rounded-lg border border-dashed border-neutral-300 p-10 text-center dark:border-neutral-700">
               <PackageSearch className="mx-auto h-8 w-8 text-neutral-400" />
               <p className="mt-3 font-medium">No inventory records yet</p>
@@ -108,7 +129,7 @@ export default async function AdminInventoryPage({
             </div>
           ) : (
             <div className="space-y-4">
-              {rows.map((row) => {
+              {validRows.map((row) => {
                 const variant = row.variant;
                 const product = variant?.product;
                 return (
