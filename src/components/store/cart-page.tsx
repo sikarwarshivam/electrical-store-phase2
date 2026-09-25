@@ -119,11 +119,17 @@ export function CartPage() {
   }
 
   useEffect(() => {
-    if (isHydrated && signature) {
-      void reconcile();
-    } else if (isHydrated && !signature) {
-      clearReconcileState();
-    }
+    if (!isHydrated) return;
+
+    const timer = window.setTimeout(() => {
+      if (signature) {
+        void reconcile();
+      } else {
+        clearReconcileState();
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
     // Re-run only when cart contents/quantities change, not when server metadata is synced.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHydrated, signature]);
