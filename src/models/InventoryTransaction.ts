@@ -18,7 +18,9 @@ export interface IInventoryTransaction extends Document {
   reason: string;
   referenceType?: string;
   referenceId?: string;
-  performedBy: mongoose.Types.ObjectId;
+  performedBy?: mongoose.Types.ObjectId;
+  reservedDelta?: number;
+  reservedAfter?: number;
   note?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -77,8 +79,17 @@ const InventoryTransactionSchema = new Schema<IInventoryTransaction>(
     performedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
       index: true,
+    },
+    reservedDelta: {
+      type: Number,
+      min: -1_000_000_000,
+      max: 1_000_000_000,
+    },
+    reservedAfter: {
+      type: Number,
+      min: 0,
+      max: 1_000_000_000,
     },
     note: {
       type: String,
