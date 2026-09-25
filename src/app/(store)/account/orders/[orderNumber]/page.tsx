@@ -66,7 +66,10 @@ export default async function CustomerOrderDetailPage({
               {STEPS.map((step, index) => {
                 const completed = currentStep >= index;
                 return (
-                  <div key={step} className="relative z-10 flex md:block">
+                  <div
+                    key={step}
+                    className="relative z-10 flex flex-col items-center text-center"
+                  >
                     <div
                       className={
                         "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors " +
@@ -81,7 +84,7 @@ export default async function CustomerOrderDetailPage({
                         index + 1
                       )}
                     </div>
-                    <p className="ml-3 mt-1 text-xs font-medium md:ml-0 md:max-w-24">
+                    <p className="mt-2 max-w-28 text-xs font-medium leading-4">
                       {step.replaceAll("_", " ")}
                     </p>
                   </div>
