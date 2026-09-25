@@ -10,6 +10,7 @@ import { FieldLabel } from "@/components/admin/field-label";
 import {
   adjustInventoryAction,
   archiveVariantAction,
+  setInventoryStockAction,
   createVariantAction,
   unarchiveProductAction,
   unarchiveVariantAction,
@@ -50,7 +51,11 @@ export default async function AdminProductDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ success?: string; error?: string }>;
+  searchParams: Promise<{
+    success?: string;
+    error?: string;
+    createdVariant?: string;
+  }>;
 }) {
   const [{ id: productId }, messages] = await Promise.all([params, searchParams]);
   const data = await getAdminProductById(productId);
@@ -58,6 +63,7 @@ export default async function AdminProductDetailPage({
   if (!data) notFound();
 
   const { product, variants, inventory } = data;
+  const createdVariantId = messages.createdVariant || "";
   const [categories, brands] = await Promise.all([
     getAdminCategories(),
     getAdminBrands(),
@@ -574,7 +580,9 @@ export default async function AdminProductDetailPage({
                   const stock = inventoryMap.get(id(variant._id));
                   return (
                     <details
+                      id={"variant-" + id(variant._id)}
                       key={id(variant._id)}
+                      open={createdVariantId === id(variant._id)}
                       className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
                     >
                       <summary className="cursor-pointer list-none">
@@ -871,6 +879,55 @@ export default async function AdminProductDetailPage({
                               </div>
                             )}
                           </div>
+
+                          {variant.status !== "ARCHIVED" && stock?.trackInventory !== false ? (
+                            <div className="mb-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+                              <p className="text-sm font-semibold">Set exact stock</p>
+                              <p className="mt-1 text-xs leading-5 text-neutral-500">
+                                Set the current available quantity directly. The difference is recorded as a stock correction.
+                              </p>
+
+                              <form action={setInventoryStockAction} className="mt-3 space-y-3">
+                                <input type="hidden" name="variantId" value={id(variant._id)} />
+                                <input type="hidden" name="returnPath" value={"/admin/products/" + productId} />
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                  <div>
+                                    <FieldLabel htmlFor={"set-stock-" + id(variant._id)}>
+                                      Available stock
+                                    </FieldLabel>
+                                    <input
+                                      id={"set-stock-" + id(variant._id)}
+                                      name="availableQuantity"
+                                      type="number"
+                                      min="0"
+                                      step="0.001"
+                                      required
+                                      defaultValue={stock?.availableQuantity ?? 0}
+                                      className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                    />
+                                  </div>
+                                  <div>
+                                    <FieldLabel htmlFor={"set-stock-reason-" + id(variant._id)}>
+                                      Reason
+                                    </FieldLabel>
+                                    <input
+                                      id={"set-stock-reason-" + id(variant._id)}
+                                      name="reason"
+                                      required
+                                      minLength={3}
+                                      maxLength={200}
+                                      placeholder="Physical count, opening correction..."
+                                      className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                    />
+                                  </div>
+                                </div>
+                                <Button type="submit" variant="outline">
+                                  <Save className="mr-1.5 h-4 w-4" />
+                                  Set stock
+                                </Button>
+                              </form>
+                            </div>
+                          ) : null}
 
                           {variant.status === "ARCHIVED" ? (
                             <form action={unarchiveVariantAction}>
