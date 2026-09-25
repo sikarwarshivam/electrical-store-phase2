@@ -370,3 +370,56 @@ export async function getGuestOrder(orderNumber: string, phone: string) {
     },
   }).lean();
 }
+
+
+export async function getAdminSalesStats() {
+  await connectToDatabase();
+
+  const orders = await Order.find({
+    "payment.status": "CAPTURED",
+    status: {
+      $in: [
+        "PLACED",
+        "CONFIRMED",
+        "PACKED",
+        "SHIPPED",
+        "OUT_FOR_DELIVERY",
+        "DELIVERED",
+      ],
+    },
+  })
+    .select("pricing items createdAt")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const now = Date.now();
+  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+
+  let revenuePaise = 0;
+  let units = 0;
+  let last30DaysRevenuePaise = 0;
+  let last30DaysOrders = 0;
+
+  for (const order of orders) {
+    revenuePaise += order.pricing.grandTotalPaise;
+    units += order.items.reduce((sum, item) => sum + item.quantity, 0);
+
+    if (new Date(order.createdAt).getTime() >= thirtyDaysAgo) {
+      last30DaysRevenuePaise += order.pricing.grandTotalPaise;
+      last30DaysOrders += 1;
+    }
+  }
+
+  const pendingOrders = await Order.countDocuments({
+    status: { $in: ["PAYMENT_PENDING", "PLACED", "CONFIRMED", "PACKED", "SHIPPED", "OUT_FOR_DELIVERY"] },
+  });
+
+  return {
+    paidOrders: orders.length,
+    revenuePaise,
+    units,
+    last30DaysRevenuePaise,
+    last30DaysOrders,
+    pendingOrders,
+  };
+}
