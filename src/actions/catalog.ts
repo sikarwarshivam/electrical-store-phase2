@@ -1481,7 +1481,7 @@ export async function setInventoryStockAction(formData: FormData) {
   redirectWithMessage(safeReturnPath, "success", `Stock updated to ${nextQuantity}.`);
 }
 
-export async function cleanupOrphanInventoryAction(formData: FormData) {
+export async function cleanupOrphanInventoryAction() {
   await getAdminActor();
   const returnPath = "/admin/inventory";
 
