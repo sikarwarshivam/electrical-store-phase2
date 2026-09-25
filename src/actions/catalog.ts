@@ -1013,9 +1013,21 @@ export async function createVariantAction(formData: FormData) {
           ? `low stock (${initialQuantity} available)`
           : `in stock (${initialQuantity} available)`;
 
+    const storefrontNotes = [
+      parsed.status !== "ACTIVE" ? "The SKU is inactive, so it is hidden from the storefront." : "",
+      product!.status !== "ACTIVE"
+        ? "The product is still Draft, so publish the product to show it in the storefront."
+        : "",
+    ].filter(Boolean);
+
+    const message = [
+      `Variant ${parsed.sku} created — ${createdStatus}.`,
+      ...storefrontNotes,
+    ].join(" ");
+
     redirect(
       `/admin/products/${parsed.productId}?success=${encodeURIComponent(
-        `Variant ${parsed.sku} created — ${createdStatus}.`
+        message
       )}&createdVariant=${encodeURIComponent(String(variant._id))}#variant-${encodeURIComponent(String(variant._id))}`
     );
   } catch (error) {
