@@ -50,12 +50,7 @@ export function AdminNav({ onItemClick, className }: AdminNavProps) {
           <Link
             key={item.href}
             href={item.href}
-            prefetch={true}
-            onClick={() => {
-              const main = document.getElementById("admin-main");
-              main?.scrollTo({ top: 0, behavior: "smooth" });
-              onItemClick?.();
-            }}
+            onClick={onItemClick}
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
               isActive
