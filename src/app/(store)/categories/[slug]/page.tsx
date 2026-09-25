@@ -36,12 +36,10 @@ export default async function CategoryPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
-  const category = await getPublicCategoryBySlug(slug);
-
-  if (!category) notFound();
-
-  const catalog = await getPublicProducts({
-    categorySlug: slug,
+  const [category, catalog] = await Promise.all([
+    getPublicCategoryBySlug(slug),
+    getPublicProducts({
+      categorySlug: slug,
     q: query.q,
     spec: query.spec,
     sort:
@@ -51,8 +49,11 @@ export default async function CategoryPage({
         ? query.sort
         : "newest",
     page: Number.isInteger(Number(query.page)) && Number(query.page) > 0 ? Number(query.page) : 1,
-    pageSize: 24,
-  });
+      pageSize: 24,
+    }),
+  ]);
+
+  if (!category) notFound();
 
   function categoryPageHref(page?: number) {
     const search = new URLSearchParams();
