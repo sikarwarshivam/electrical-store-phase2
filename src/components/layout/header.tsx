@@ -11,7 +11,7 @@ import { useUIStore } from "@/stores/ui-store";
 
 export function Header() {
   const { data: session, status } = useSession();
-  const { itemCount, toggleCart } = useCart();
+  const { itemCount } = useCart();
   const { isMobileMenuOpen, toggleMobileMenu } = useUIStore();
 
   const user = session?.user;
@@ -60,8 +60,8 @@ export function Header() {
         {/* Actions (Cart, User, Mobile toggle) */}
         <div className="flex items-center gap-3">
           {/* Cart Trigger */}
-          <button
-            onClick={toggleCart}
+          <Link
+            href="/cart"
             className="relative flex h-9 w-9 items-center justify-center rounded-md border border-neutral-200 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-900"
             aria-label="Shopping Cart"
           >
@@ -71,7 +71,7 @@ export function Header() {
                 {itemCount}
               </span>
             )}
-          </button>
+          </Link>
 
           {/* Auth Status */}
           {status === "loading" ? (
