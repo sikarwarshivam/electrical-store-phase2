@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { connectToDatabase } from "@/lib/db";
 import { Inventory } from "@/models/Inventory";
 import { InventoryTransaction } from "@/models/InventoryTransaction";
 import { Order } from "@/models/Order";
@@ -298,7 +299,7 @@ export async function releaseExpiredOrderReservations() {
 
 
 export async function getAdminOrders(limit = 50) {
-  await import("@/lib/db").then(({ connectToDatabase }) => connectToDatabase());
+  await connectToDatabase();
 
   const orders = await Order.find({})
     .sort({ createdAt: -1 })
