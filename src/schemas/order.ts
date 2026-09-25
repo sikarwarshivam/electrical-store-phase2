@@ -52,3 +52,23 @@ export const verifyPaymentSchema = z.object({
 
 export type CreatePaymentOrderInput = z.infer<typeof createPaymentOrderSchema>;
 export type VerifyPaymentInput = z.infer<typeof verifyPaymentSchema>;
+
+export const adminOrderStatusSchema = z.object({
+  orderId: objectIdSchema,
+  status: z.enum([
+    "CONFIRMED",
+    "PACKED",
+    "SHIPPED",
+    "OUT_FOR_DELIVERY",
+    "DELIVERED",
+    "CANCELLED",
+  ]),
+  note: z
+    .string()
+    .trim()
+    .max(300, "Status note is too long")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type AdminOrderStatusInput = z.infer<typeof adminOrderStatusSchema>;
