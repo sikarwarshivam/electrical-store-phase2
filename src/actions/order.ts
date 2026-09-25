@@ -11,6 +11,7 @@ import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
 import { createPaymentOrderSchema, verifyPaymentSchema } from "@/schemas/order";
 import { reconcileCartAction } from "@/actions/cart";
+import type { IOrderLine } from "@/models/Order";
 
 function parseConfiguredPaise(name: string, fallback = 0) {
   const raw = process.env[name]?.trim();
@@ -147,7 +148,12 @@ export async function createPaymentOrderAction(
     if (
       reconciliation.issues.length > 0 ||
       reconciliation.lines.length !== items.length ||
-      reconciliation.lines.some((line) => !line.purchasable || !line.productId || !line.unitPricePaise)
+      reconciliation.lines.some(
+        (line) =>
+          !line.purchasable ||
+          !line.productId ||
+          line.unitPricePaise === undefined
+      )
     ) {
       return {
         success: false,
@@ -181,7 +187,7 @@ export async function createPaymentOrderAction(
           ? line.title.slice(line.title.indexOf(" — ") + 3)
           : undefined,
         imageUrl: line.image,
-        unitOfSale: line.unitOfSale! as never,
+        unitOfSale: line.unitOfSale! as IOrderLine["unitOfSale"],
         quantity: line.quantity,
         unitPricePaise: line.unitPricePaise!,
         mrpPaise: line.mrpPaise!,
