@@ -46,6 +46,14 @@ export function Header() {
               {item.title}
             </Link>
           ))}
+          {!user ? (
+            <Link
+              href="/track-order"
+              className="text-sm font-semibold text-amber-600 hover:text-amber-700"
+            >
+              Track Order
+            </Link>
+          ) : null}
           {isAdmin && (
             <Link
               href="/admin"
