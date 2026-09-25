@@ -12,6 +12,11 @@ import {
 import { PageContainer } from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
 import { reconcileCartAction } from "@/actions/cart";
+import {
+  createPaymentOrderAction,
+  verifyRazorpayPaymentAction,
+  type CreatePaymentOrderResult,
+} from "@/actions/order";
 import type { CartReconcileLine } from "@/actions/cart";
 import { useCart } from "@/hooks/use-cart";
 import { formatINRFromPaise } from "@/lib/money";
@@ -59,6 +64,71 @@ function sanitizeDigits(value: string, maxLength: number) {
   return value.replace(/\D/g, "").slice(0, maxLength);
 }
 
+type RazorpayCheckoutOptions = {
+  key: string;
+  amount: number;
+  currency: "INR";
+  name: string;
+  description: string;
+  order_id: string;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  notes?: Record<string, string>;
+  handler: (response: {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+  }) => void | Promise<void>;
+  modal?: {
+    ondismiss?: () => void;
+  };
+};
+
+type RazorpayCheckoutInstance = {
+  open: () => void;
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayCheckoutOptions) => RazorpayCheckoutInstance;
+  }
+}
+
+function loadRazorpayCheckoutScript() {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Payment checkout is unavailable."));
+  }
+
+  if (window.Razorpay) return Promise.resolve();
+
+  const existing = document.querySelector<HTMLScriptElement>(
+    'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
+  );
+
+  return new Promise<void>((resolve, reject) => {
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error("Unable to load Razorpay checkout.")),
+        { once: true }
+      );
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () =>
+      reject(new Error("Unable to load Razorpay checkout."));
+    document.body.appendChild(script);
+  });
+}
+
 export function CheckoutPage() {
   const { items, isHydrated } = useCart();
   const [lines, setLines] = useState<CartReconcileLine[]>([]);
@@ -67,6 +137,11 @@ export function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [address, setAddress] = useState(initialAddress);
   const [submitted, setSubmitted] = useState(false);
+  const [paymentOrder, setPaymentOrder] = useState<
+    Extract<CreatePaymentOrderResult, { success: true }> | null
+  >(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
 
   const signature = useMemo(
     () =>
@@ -131,11 +206,109 @@ export function CheckoutPage() {
   function updateField(field: keyof AddressState, value: string) {
     setAddress((current) => ({ ...current, [field]: value }));
     setSubmitted(false);
+    setPaymentOrder(null);
+    setPaymentError("");
   }
 
-  function submitSkeleton(event: FormEvent<HTMLFormElement>) {
+  async function submitPayment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitted(true);
+    setPaymentError("");
+
+    if (!addressComplete || !cartVerified || loading) return;
+
+    setPaymentLoading(true);
+
+    try {
+      const order =
+        paymentOrder ||
+        (await createPaymentOrderAction({
+          checkoutId:
+            typeof crypto !== "undefined" && "randomUUID" in crypto
+              ? crypto.randomUUID()
+              : "checkout-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10),
+          items: items.map((item) => ({
+            variantId: item.variantId,
+            quantity: item.quantity,
+            unitPricePaise: item.unitPricePaise,
+          })),
+          address,
+        }));
+
+      if (!order.success) {
+        setPaymentError(order.error);
+        return;
+      }
+
+      setPaymentOrder(order);
+      await loadRazorpayCheckoutScript();
+
+      if (!window.Razorpay) {
+        throw new Error("Razorpay checkout did not initialize.");
+      }
+
+      const checkout = new window.Razorpay({
+        key: order.razorpayKeyId,
+        amount: order.amountPaise,
+        currency: "INR",
+        name: "Electrical Retail Store",
+        description: "Order " + order.orderNumber,
+        order_id: order.razorpayOrderId,
+        prefill: {
+          name: address.fullName,
+          email: address.email || undefined,
+          contact: address.phone,
+        },
+        notes: {
+          order_number: order.orderNumber,
+        },
+        handler: async (response) => {
+          setPaymentLoading(true);
+          setPaymentError("");
+
+          try {
+            if (response.razorpay_order_id !== order.razorpayOrderId) {
+              setPaymentError("Payment order mismatch. Please contact support before retrying.");
+              return;
+            }
+
+            const verified = await verifyRazorpayPaymentAction({
+              orderId: order.orderId,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+
+            if (!verified.success) {
+              setPaymentError(verified.error);
+              return;
+            }
+
+            window.location.assign(
+              "/order-success?order=" + encodeURIComponent(verified.orderNumber)
+            );
+          } catch {
+            setPaymentError(
+              "Payment was received by the gateway but verification could not be completed yet. Please wait for confirmation before retrying."
+            );
+          } finally {
+            setPaymentLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setPaymentLoading(false);
+          },
+        },
+      });
+
+      checkout.open();
+    } catch (error) {
+      setPaymentError(
+        error instanceof Error ? error.message : "Unable to start payment. Please try again."
+      );
+    } finally {
+      setPaymentLoading(false);
+    }
   }
 
   if (!isHydrated) {
@@ -185,9 +358,8 @@ export function CheckoutPage() {
       description="Review your cart and enter delivery details."
     >
       <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
-        This phase establishes the checkout structure and server-side cart
-        verification. Order creation, Razorpay verification, COD rules, and
-        delivery charges are connected in the following commerce phases.
+        Your cart is rechecked on the server before payment. The server creates the Razorpay
+        payment order from the verified current price, stock, tax, and configured delivery charge.
       </div>
 
       {issues.length > 0 ? (
@@ -217,7 +389,7 @@ export function CheckoutPage() {
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        <form onSubmit={submitSkeleton} className="space-y-6">
+        <form onSubmit={submitPayment} className="space-y-6">
           <section className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-950">
             <div className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-amber-600" />
@@ -324,25 +496,38 @@ export function CheckoutPage() {
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-amber-600" />
               <div>
-                <h2 className="text-base font-bold">Payment method</h2>
+                <h2 className="text-base font-bold">Payment</h2>
                 <p className="text-xs text-neutral-500">
-                  Razorpay and COD rules are added after the checkout skeleton.
+                  Secure payment through Razorpay. Your card or UPI details are handled by Razorpay.
                 </p>
               </div>
             </div>
-            <div className="mt-4 rounded-lg border border-dashed border-neutral-300 p-4 text-sm text-neutral-500 dark:border-neutral-700">
-              Payment selection is intentionally disabled until the payment
-              and order models are in place.
+            <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
+              <p className="text-sm font-semibold">Online payment</p>
+              <p className="mt-1 text-xs leading-5 text-neutral-500">
+                Supports the payment methods enabled for your Razorpay account. The order is
+                created from server-verified price and stock, and payment is verified on the server.
+              </p>
             </div>
+
+            {paymentError ? (
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/20 dark:text-red-200">
+                {paymentError}
+              </div>
+            ) : null}
           </section>
 
           <Button
             type="submit"
             size="lg"
             className="w-full sm:w-auto"
-            disabled={continueDisabled}
+            disabled={continueDisabled || paymentLoading}
           >
-            Continue to payment
+            {paymentLoading
+              ? "Opening secure payment..."
+              : paymentOrder
+                ? "Retry payment"
+                : "Continue to payment"}
           </Button>
         </form>
 
