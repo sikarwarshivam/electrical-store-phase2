@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CatalogMessage } from "@/components/admin/catalog-message";
 import { FieldLabel } from "@/components/admin/field-label";
+import { FocusCreatedVariant } from "@/components/admin/focus-created-variant";
 import {
   adjustInventoryAction,
   archiveVariantAction,
@@ -104,6 +105,7 @@ export default async function AdminProductDetailPage({
       }
     >
       <CatalogMessage success={messages.success} error={messages.error} />
+      <FocusCreatedVariant variantId={createdVariantId} />
 
       <div className="space-y-6">
         <Card>
