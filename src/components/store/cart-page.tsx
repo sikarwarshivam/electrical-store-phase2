@@ -66,6 +66,11 @@ export function CartPage() {
     [reconciled]
   );
 
+  function clearReconcileState() {
+    setReconciled([]);
+    setReconciledSignature("");
+  }
+
   async function reconcile() {
     if (!items.length) {
       setReconciled([]);
@@ -117,8 +122,7 @@ export function CartPage() {
     if (isHydrated && signature) {
       void reconcile();
     } else if (isHydrated && !signature) {
-      setReconciled([]);
-      setReconciledSignature("");
+      clearReconcileState();
     }
     // Re-run only when cart contents/quantities change, not when server metadata is synced.
     // eslint-disable-next-line react-hooks/exhaustive-deps
