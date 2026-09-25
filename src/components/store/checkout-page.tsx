@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useSession } from "next-auth/react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -12,6 +13,7 @@ import {
 import { PageContainer } from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
 import { reconcileCartAction } from "@/actions/cart";
+import { getCheckoutSavedAddressesAction } from "@/actions/address";
 import {
   createPaymentOrderAction,
   verifyRazorpayPaymentAction,
@@ -20,6 +22,20 @@ import {
 import type { CartReconcileLine } from "@/actions/cart";
 import { useCart } from "@/hooks/use-cart";
 import { formatINRFromPaise } from "@/lib/money";
+
+interface CheckoutSavedAddress {
+  id: string;
+  label: "HOME" | "WORK" | "OTHER";
+  fullName: string;
+  phone: string;
+  pincode: string;
+  house: string;
+  street: string;
+  landmark: string;
+  city: string;
+  state: string;
+  isDefault: boolean;
+}
 
 interface AddressState {
   fullName: string;
@@ -131,6 +147,7 @@ function loadRazorpayCheckoutScript() {
 
 export function CheckoutPage() {
   const { items, isHydrated, clearCart } = useCart();
+  const { status: sessionStatus } = useSession();
   const [lines, setLines] = useState<CartReconcileLine[]>([]);
   const [issues, setIssues] = useState<Array<{ variantId: string; message: string }>>([]);
   const [verifiedSignature, setVerifiedSignature] = useState("");
@@ -142,6 +159,31 @@ export function CheckoutPage() {
   >(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  const [savedAddresses, setSavedAddresses] = useState<CheckoutSavedAddress[]>([]);
+  const [savedAddressesLoading, setSavedAddressesLoading] = useState(false);
+  const [selectedSavedAddressId, setSelectedSavedAddressId] = useState("");
+
+  function isAddressBlank(value: AddressState) {
+    return !Object.values(value).some((field) => field.trim());
+  }
+
+  function applySavedAddress(saved: CheckoutSavedAddress) {
+    setAddress({
+      fullName: saved.fullName,
+      phone: saved.phone,
+      email: address.email,
+      pincode: saved.pincode,
+      house: saved.house,
+      street: saved.street,
+      landmark: saved.landmark,
+      city: saved.city,
+      state: saved.state,
+    });
+    setSelectedSavedAddressId(saved.id);
+    setSubmitted(false);
+    setPaymentOrder(null);
+    setPaymentError("");
+  }
 
   const signature = useMemo(
     () =>
@@ -197,6 +239,54 @@ export function CheckoutPage() {
     // Cart metadata changes do not require a second server reconciliation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHydrated, signature]);
+
+  useEffect(() => {
+    if (sessionStatus !== "authenticated") {
+      setSavedAddresses([]);
+      setSelectedSavedAddressId("");
+      return;
+    }
+
+    let active = true;
+    setSavedAddressesLoading(true);
+
+    void getCheckoutSavedAddressesAction()
+      .then((addresses) => {
+        if (!active) return;
+
+        setSavedAddresses(addresses);
+        const defaultAddress = addresses.find((item) => item.isDefault) || addresses[0];
+
+        if (defaultAddress) {
+          setAddress((current) => {
+            if (!isAddressBlank(current)) return current;
+
+            setSelectedSavedAddressId(defaultAddress.id);
+            return {
+              fullName: defaultAddress.fullName,
+              phone: defaultAddress.phone,
+              email: current.email,
+              pincode: defaultAddress.pincode,
+              house: defaultAddress.house,
+              street: defaultAddress.street,
+              landmark: defaultAddress.landmark,
+              city: defaultAddress.city,
+              state: defaultAddress.state,
+            };
+          });
+        }
+      })
+      .catch(() => {
+        if (active) setSavedAddresses([]);
+      })
+      .finally(() => {
+        if (active) setSavedAddressesLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [sessionStatus]);
 
   const subtotalPaise = lines.reduce(
     (total, line) =>
@@ -405,6 +495,67 @@ export function CheckoutPage() {
                 </p>
               </div>
             </div>
+
+            {sessionStatus === "authenticated" ? (
+              <div className="mb-5 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">Saved addresses</p>
+                    <p className="mt-1 text-xs text-neutral-500">
+                      Choose a saved address to fill the checkout form automatically.
+                    </p>
+                  </div>
+                  {savedAddressesLoading ? (
+                    <span className="text-xs text-neutral-500">Loading...</span>
+                  ) : null}
+                </div>
+
+                {savedAddresses.length > 0 ? (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {savedAddresses.map((saved) => {
+                      const selectedSaved = selectedSavedAddressId === saved.id;
+                      return (
+                        <button
+                          key={saved.id}
+                          type="button"
+                          onClick={() => applySavedAddress(saved)}
+                          className={
+                            "rounded-lg border p-3 text-left transition-colors " +
+                            (selectedSaved
+                              ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500 dark:bg-amber-950/20"
+                              : "border-neutral-200 bg-white hover:border-amber-400 dark:border-neutral-800 dark:bg-neutral-950")
+                          }
+                          aria-pressed={selectedSaved}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-semibold">{saved.label}</span>
+                            {saved.isDefault ? (
+                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                                Default
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-2 text-xs font-medium">{saved.fullName} · {saved.phone}</p>
+                          <p className="mt-1 text-xs leading-5 text-neutral-500">
+                            {saved.house}, {saved.street}
+                            {saved.landmark ? ", " + saved.landmark : ""}
+                            <br />
+                            {saved.city}, {saved.state} - {saved.pincode}
+                          </p>
+                          <p className="mt-2 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                            {selectedSaved ? "Selected" : "Use this address"}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs text-neutral-500">
+                    No saved addresses yet. Add one from My Account → Saved Addresses.
+                  </p>
+                )}
+              </div>
+            ) : null}
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               {(
