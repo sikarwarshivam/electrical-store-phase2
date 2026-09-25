@@ -18,6 +18,8 @@ export const metadata = {
   title: "Products Management",
 };
 
+export const dynamic = "force-dynamic";
+
 function id(value: unknown) {
   return String(value);
 }
