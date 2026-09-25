@@ -298,6 +298,7 @@ export function CheckoutPage() {
 
   function updateField(field: keyof AddressState, value: string) {
     setAddress((current) => ({ ...current, [field]: value }));
+    setSelectedSavedAddressId("");
     setSubmitted(false);
     setPaymentOrder(null);
     setPaymentError("");
