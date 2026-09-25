@@ -67,9 +67,18 @@ async function razorpayRequest<T>(
     | null;
 
   if (!response.ok) {
+    const errorBody =
+      body &&
+      typeof body === "object" &&
+      "error" in body &&
+      typeof body.error === "object" &&
+      body.error !== null
+        ? body.error
+        : undefined;
+
     const message =
-      body && "error" in body && body.error?.description
-        ? body.error.description
+      errorBody && "description" in errorBody && typeof errorBody.description === "string"
+        ? errorBody.description
         : "Razorpay request failed.";
     throw new Error(message);
   }
