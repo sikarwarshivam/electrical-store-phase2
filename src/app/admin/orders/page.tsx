@@ -119,7 +119,6 @@ export default async function AdminOrdersPage({
                         {order.status === "PACKED" ? <option value="SHIPPED">Mark shipped</option> : null}
                         {order.status === "SHIPPED" ? <option value="OUT_FOR_DELIVERY">Out for delivery</option> : null}
                         {order.status === "OUT_FOR_DELIVERY" ? <option value="DELIVERED">Mark delivered</option> : null}
-                        {order.status !== "SHIPPED" && order.status !== "OUT_FOR_DELIVERY" ? <option value="CANCELLED">Cancel order</option> : null}
                       </select>
                       <input
                         type="text"
