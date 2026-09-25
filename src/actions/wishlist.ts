@@ -156,6 +156,9 @@ export async function getWishlistItems() {
           pricePaise: 0,
           unitOfSale: "PIECE",
           availableQuantity: 0,
+          trackInventory: true,
+          minOrderQuantity: 1,
+          orderQuantityStep: 1,
         },
       ];
     }
@@ -185,6 +188,9 @@ export async function getWishlistItems() {
         pricePaise: defaultVariant.pricePaise,
         unitOfSale: defaultVariant.unitOfSale,
         availableQuantity: inventory?.availableQuantity ?? 0,
+        trackInventory: defaultVariant.trackInventory,
+        minOrderQuantity: defaultVariant.minOrderQuantity,
+        orderQuantityStep: defaultVariant.orderQuantityStep,
       },
     ];
   });
