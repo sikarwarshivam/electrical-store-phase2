@@ -45,7 +45,7 @@ export function TrackOrderForm() {
             </div>
             <div className="flex gap-2">
               <span className="rounded-full border px-2.5 py-0.5 text-xs font-semibold">{result.order.status.replaceAll("_", " ")}</span>
-              <span className="rounded-full border px-2.5 py-0.5 text-xs font-semibold">Payment {result.order.payment.status}</span>
+              <span className="rounded-full border px-2.5 py-0.5 text-xs font-semibold">Payment {result.order.payment}</span>
             </div>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
