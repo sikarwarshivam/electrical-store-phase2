@@ -30,7 +30,6 @@ export function AdminHeader() {
       <div className="flex items-center gap-2 sm:gap-4">
         <Link
           href="/"
-          prefetch
           className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-neutral-300 bg-white px-3 text-xs font-medium text-neutral-800 transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800"
           title="View Customer Store"
         >
