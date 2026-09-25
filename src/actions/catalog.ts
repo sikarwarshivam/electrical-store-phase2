@@ -1275,6 +1275,10 @@ export async function unarchiveVariantAction(formData: FormData) {
 }
 export async function adjustInventoryAction(formData: FormData) {
   const actor = await getAdminActor();
+  const requestedReturnPath = text(formData, "returnPath");
+  const safeReturnPath = /^\/admin\/products\/[a-fA-F0-9]{24}$/.test(requestedReturnPath)
+    ? requestedReturnPath
+    : "/admin/inventory";
 
   let input;
   try {
@@ -1284,14 +1288,14 @@ export async function adjustInventoryAction(formData: FormData) {
       reason: text(formData, "reason"),
     });
   } catch (error) {
-    redirectWithMessage("/admin/inventory", "error", zodMessage(error));
+    redirectWithMessage(safeReturnPath, "error", zodMessage(error));
   }
 
   await connectToDatabase();
 
   const inventory = await Inventory.findOne({ variant: input.variantId });
   if (!inventory) {
-    redirectWithMessage("/admin/inventory", "error", "Inventory record not found.");
+    redirectWithMessage(safeReturnPath, "error", "Inventory record not found.");
   }
 
   if (!inventory!.trackInventory) {
@@ -1333,5 +1337,6 @@ export async function adjustInventoryAction(formData: FormData) {
   revalidatePath("/admin/inventory");
   revalidatePath("/admin");
   revalidatePath("/admin/products");
-  redirectWithMessage("/admin/inventory", "success", "Inventory adjusted.");
+  revalidatePath(safeReturnPath);
+  redirectWithMessage(safeReturnPath, "success", "Inventory adjusted.");
 }
