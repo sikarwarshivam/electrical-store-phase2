@@ -308,3 +308,65 @@ export async function getAdminOrders(limit = 50) {
 
   return orders;
 }
+
+
+export async function getCustomerOrders(userId: string, limit = 50) {
+  if (!isObjectId(userId)) return [];
+  await connectToDatabase();
+
+  return Order.find({ "customer.userId": new mongoose.Types.ObjectId(userId) })
+    .sort({ createdAt: -1 })
+    .limit(Math.min(Math.max(limit, 1), 100))
+    .lean();
+}
+
+export async function getCustomerOrder(userId: string, orderNumber: string) {
+  if (!isObjectId(userId) || !orderNumber.trim()) return null;
+  await connectToDatabase();
+
+  return Order.findOne({
+    orderNumber: orderNumber.trim().toUpperCase(),
+    "customer.userId": new mongoose.Types.ObjectId(userId),
+  }).lean();
+}
+
+export async function getVerifiedOrderByNumber(orderNumber: string) {
+  if (!orderNumber.trim()) return null;
+  await connectToDatabase();
+
+  return Order.findOne({
+    orderNumber: orderNumber.trim().toUpperCase(),
+    "payment.status": "CAPTURED",
+    status: {
+      $in: [
+        "PLACED",
+        "CONFIRMED",
+        "PACKED",
+        "SHIPPED",
+        "OUT_FOR_DELIVERY",
+        "DELIVERED",
+      ],
+    },
+  }).lean();
+}
+
+export async function getGuestOrder(orderNumber: string, phone: string) {
+  if (!orderNumber.trim() || !/^[6-9]\d{9}$/.test(phone)) return null;
+  await connectToDatabase();
+
+  return Order.findOne({
+    orderNumber: orderNumber.trim().toUpperCase(),
+    "customer.phone": phone,
+    "payment.status": "CAPTURED",
+    status: {
+      $in: [
+        "PLACED",
+        "CONFIRMED",
+        "PACKED",
+        "SHIPPED",
+        "OUT_FOR_DELIVERY",
+        "DELIVERED",
+      ],
+    },
+  }).lean();
+}
