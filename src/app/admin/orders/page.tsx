@@ -14,14 +14,14 @@ export default function AdminOrdersPage() {
       description="Track order processing, dispatch status, invoices, and delivery updates."
       actions={
         <Badge variant="outline" className="text-xs">
-          Phase 1 Shell
+          Payment foundation active
         </Badge>
       }
     >
       <EmptyState
         icon={<ShoppingCart className="h-8 w-8 text-amber-600" />}
-        title="Order Processing Module Inactive"
-        description="Razorpay webhook handling, order lifecycle state machine, and shipping integrations will be established in Phase 2."
+        title="Order management is the next layer"
+        description="Payment-backed order creation, signed Razorpay webhook verification, inventory reservations, and payment failure handling are now active. Admin order listing and lifecycle controls are the next commerce step."
       />
     </PageContainer>
   );
