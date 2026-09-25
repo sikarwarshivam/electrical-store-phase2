@@ -16,7 +16,9 @@ function handleDevFallback(email: string, password: string) {
     return null;
   }
 
-  // Pre-configured test users for offline local UI verification
+  // Pre-configured test users for offline local UI verification.
+  // When the database is available, authorize() persists these credentials
+  // as real User records so audit references can use a MongoDB ObjectId.
   if (email === "admin@dev.local" && password === "DevAdmin@123") {
     logger.info("[DEV ONLY] Authenticated development ADMIN test user");
     return {
@@ -37,6 +39,50 @@ function handleDevFallback(email: string, password: string) {
       phone: "9876543211",
       role: "CUSTOMER" as UserRole,
     };
+  }
+
+  return null;
+}
+
+async function getOrCreateDevUser(email: string, password: string) {
+  if (process.env.NODE_ENV !== "development") {
+    return null;
+  }
+
+  if (email === "admin@dev.local" && password === "DevAdmin@123") {
+    const passwordHash = await bcrypt.hash(password, 10);
+    return User.findOneAndUpdate(
+      { email },
+      {
+        $setOnInsert: {
+          name: "Development Admin",
+          email,
+          phone: "9876543210",
+          passwordHash,
+          role: "ADMIN",
+          isActive: true,
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+  }
+
+  if (email === "customer@dev.local" && password === "DevCustomer@123") {
+    const passwordHash = await bcrypt.hash(password, 10);
+    return User.findOneAndUpdate(
+      { email },
+      {
+        $setOnInsert: {
+          name: "Development Customer",
+          email,
+          phone: "9876543211",
+          passwordHash,
+          role: "CUSTOMER",
+          isActive: true,
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
   }
 
   return null;
@@ -73,9 +119,19 @@ export const authOptions: NextAuthOptions = {
 
           const user = await User.findOne({ email });
           if (!user) {
-            // Environment-gated fallback for local development testing
+            // Persist the configured development account when the database is
+            // available so downstream audit references are valid ObjectIds.
             if (process.env.NODE_ENV === "development") {
-              return handleDevFallback(email, password);
+              const devUser = await getOrCreateDevUser(email, password);
+              if (devUser) {
+                return {
+                  id: devUser._id.toString(),
+                  name: devUser.name,
+                  email: devUser.email,
+                  phone: devUser.phone,
+                  role: devUser.role,
+                };
+              }
             }
             logger.warn(`Authorization failed: User not found for email ${email}`);
             return null;
