@@ -295,3 +295,15 @@ export async function releaseExpiredOrderReservations() {
     }
   }
 }
+
+
+export async function getAdminOrders(limit = 50) {
+  await import("@/lib/db").then(({ connectToDatabase }) => connectToDatabase());
+
+  const orders = await Order.find({})
+    .sort({ createdAt: -1 })
+    .limit(Math.min(Math.max(limit, 1), 100))
+    .lean();
+
+  return orders;
+}
