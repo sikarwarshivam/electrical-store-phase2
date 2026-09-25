@@ -3,6 +3,8 @@ import { ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getAdminOrders } from "@/lib/order-commerce";
 import { formatINRFromPaise } from "@/lib/money";
+import { updateOrderStatusAction } from "@/actions/order";
+import { CatalogMessage } from "@/components/admin/catalog-message";
 
 export const metadata = {
   title: "Orders Management",
@@ -15,7 +17,12 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
   return "secondary";
 }
 
-export default async function AdminOrdersPage() {
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ updated?: string; status?: string; error?: string }>;
+}) {
+  const params = await searchParams;
   const orders = await getAdminOrders();
 
   return (
@@ -28,6 +35,7 @@ export default async function AdminOrdersPage() {
         </Badge>
       }
     >
+      {afterTitle}
       {orders.length === 0 ? (
         <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-12 text-center dark:border-neutral-800 dark:bg-neutral-950">
           <ClipboardList className="mx-auto h-8 w-8 text-neutral-400" />
@@ -74,6 +82,67 @@ export default async function AdminOrdersPage() {
                 </div>
               </div>
 
+              <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                      Order lifecycle
+                    </p>
+                    <p className="mt-1 text-xs text-neutral-500">
+                      Move the order through the configured manual fulfilment states.
+                    </p>
+                  </div>
+                  {order.status === "PLACED" ||
+                  order.status === "CONFIRMED" ||
+                  order.status === "PACKED" ||
+                  order.status === "SHIPPED" ||
+                  order.status === "OUT_FOR_DELIVERY" ? (
+                    <form action={updateOrderStatusAction} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <input type="hidden" name="orderId" value={String(order._id)} />
+                      <select
+                        name="status"
+                        defaultValue={
+                          order.status === "PLACED"
+                            ? "CONFIRMED"
+                            : order.status === "CONFIRMED"
+                              ? "PACKED"
+                              : order.status === "PACKED"
+                                ? "SHIPPED"
+                                : order.status === "SHIPPED"
+                                  ? "OUT_FOR_DELIVERY"
+                                  : "DELIVERED"
+                        }
+                        className="h-9 rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                      >
+                        {order.status === "PLACED" ? <option value="CONFIRMED">Confirm</option> : null}
+                        {order.status === "CONFIRMED" ? <option value="PACKED">Mark packed</option> : null}
+                        {order.status === "PACKED" ? <option value="SHIPPED">Mark shipped</option> : null}
+                        {order.status === "SHIPPED" ? <option value="OUT_FOR_DELIVERY">Out for delivery</option> : null}
+                        {order.status === "OUT_FOR_DELIVERY" ? <option value="DELIVERED">Mark delivered</option> : null}
+                        {order.status !== "SHIPPED" && order.status !== "OUT_FOR_DELIVERY" ? <option value="CANCELLED">Cancel order</option> : null}
+                      </select>
+                      <input
+                        type="text"
+                        name="note"
+                        maxLength={300}
+                        placeholder="Optional note"
+                        className="h-9 min-w-0 rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                      />
+                      <button
+                        type="submit"
+                        className="inline-flex h-9 items-center justify-center rounded-md bg-amber-600 px-4 text-sm font-medium text-white hover:bg-amber-700"
+                      >
+                        Update status
+                      </button>
+                    </form>
+                  ) : (
+                    <Badge variant="secondary">
+                      No manual transition available
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
               <div className="mt-4 grid gap-3 border-t border-neutral-200 pt-4 text-sm dark:border-neutral-800 sm:grid-cols-3">
                 <div>
                   <p className="text-xs text-neutral-500">Delivery</p>
@@ -94,6 +163,30 @@ export default async function AdminOrdersPage() {
                   </p>
                 </div>
               </div>
+
+              {order.statusHistory?.length ? (
+                <details className="mt-4 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+                  <summary className="cursor-pointer text-xs font-semibold text-neutral-600 dark:text-neutral-300">
+                    Status history ({order.statusHistory.length})
+                  </summary>
+                  <div className="mt-3 space-y-2">
+                    {order.statusHistory.map((entry, index) => (
+                      <div
+                        key={entry.status + String(entry.changedAt) + index}
+                        className="flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <span className="font-medium">
+                          {entry.status.replaceAll("_", " ")}
+                          {entry.note ? " — " + entry.note : ""}
+                        </span>
+                        <span className="text-neutral-500">
+                          {new Date(entry.changedAt).toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
             </div>
           ))}
         </div>
