@@ -13,6 +13,7 @@ import {
   archiveVariantAction,
   setInventoryStockAction,
   createVariantAction,
+  deleteVariantAction,
   unarchiveProductAction,
   unarchiveVariantAction,
   updateProductAction,
@@ -631,6 +632,7 @@ export default async function AdminProductDetailPage({
                                 id={`edit-sku-${id(variant._id)}`}
                                 name="sku"
                                 required
+                                autoFocus={createdVariantId === id(variant._id)}
                                 defaultValue={variant.sku}
                                 className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
                               />
@@ -950,6 +952,23 @@ export default async function AdminProductDetailPage({
                               </Button>
                             </form>
                           )}
+
+                          <details className="rounded-lg border border-red-200 bg-red-50/60 p-3 dark:border-red-900 dark:bg-red-950/20">
+                            <summary className="cursor-pointer text-sm font-semibold text-red-700 dark:text-red-300">
+                              Delete SKU permanently
+                            </summary>
+                            <p className="mt-2 text-xs leading-5 text-red-700/80 dark:text-red-300/80">
+                              Permanently removes this SKU, its current inventory record, and its inventory history.
+                              This cannot be undone. An active product must retain at least one active SKU.
+                            </p>
+                            <form action={deleteVariantAction} className="mt-3">
+                              <input type="hidden" name="id" value={id(variant._id)} />
+                              <input type="hidden" name="productId" value={productId} />
+                              <Button type="submit" variant="destructive" className="w-full">
+                                Delete SKU permanently
+                              </Button>
+                            </form>
+                          </details>
                         </div>
                       </div>
                     </details>
