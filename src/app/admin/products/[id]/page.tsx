@@ -60,16 +60,16 @@ export default async function AdminProductDetailPage({
   }>;
 }) {
   const [{ id: productId }, messages] = await Promise.all([params, searchParams]);
-  const data = await getAdminProductById(productId);
+  const [data, categories, brands] = await Promise.all([
+    getAdminProductById(productId),
+    getAdminCategories(),
+    getAdminBrands(),
+  ]);
 
   if (!data) notFound();
 
   const { product, variants, inventory } = data;
   const createdVariantId = messages.createdVariant || "";
-  const [categories, brands] = await Promise.all([
-    getAdminCategories(),
-    getAdminBrands(),
-  ]);
 
   const topLevel = categories.filter((category) => !category.parent);
   const subcategories = categories.filter((category) => category.parent);
