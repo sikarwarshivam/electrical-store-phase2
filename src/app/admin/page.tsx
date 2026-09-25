@@ -14,11 +14,16 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/layout/empty-state";
 import { siteConfig } from "@/config/site";
 import { getCatalogDashboardStats } from "@/lib/catalog";
+import { getAdminSalesStats } from "@/lib/order-commerce";
+import { formatINRFromPaise } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const stats = await getCatalogDashboardStats();
+  const [stats, sales] = await Promise.all([
+    getCatalogDashboardStats(),
+    getAdminSalesStats(),
+  ]);
 
   const cards = [
     {
@@ -67,7 +72,7 @@ export default async function AdminDashboardPage() {
           <p className="font-semibold">Catalog foundation is active</p>
           <p className="mt-1 text-xs leading-5">
             Product, category, brand, SKU/variant, and inventory records are now backed by MongoDB.
-            Checkout, orders, payment, customer analytics, and revenue metrics remain uninitialized until their later phases.
+            Checkout, payment verification, customer order history, inventory reservation, and basic sales metrics are now active.
           </p>
         </div>
 
@@ -96,6 +101,44 @@ export default async function AdminDashboardPage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 font-semibold">
+                <Tags className="h-4 w-4 text-amber-600" />
+                Paid Orders
+              </div>
+              <p className="mt-2 text-2xl font-bold">{sales.paidOrders}</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                Captured orders in active sales lifecycle states
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 font-semibold">
+                <Tags className="h-4 w-4 text-amber-600" />
+                Sales Revenue
+              </div>
+              <p className="mt-2 text-2xl font-bold">
+                {formatINRFromPaise(sales.revenuePaise)}
+              </p>
+              <p className="mt-1 text-xs text-neutral-500">
+                Verified paid order totals
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 font-semibold">
+                <Tags className="h-4 w-4 text-amber-600" />
+                Units Sold
+              </div>
+              <p className="mt-2 text-2xl font-bold">{sales.units}</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                Units across verified paid orders
+              </p>
+            </CardContent>
+          </Card>
           <Link href="/admin/categories">
             <Card className="h-full">
               <CardContent className="p-5">
@@ -124,11 +167,13 @@ export default async function AdminDashboardPage() {
             <CardContent className="p-5">
               <div className="flex items-center gap-2 font-semibold">
                 <Tags className="h-4 w-4 text-amber-600" />
-                Orders & Revenue
+                Last 30 Days
               </div>
-              <p className="mt-2 text-sm font-semibold text-neutral-500">Not initialized</p>
+              <p className="mt-2 text-lg font-bold">
+                {formatINRFromPaise(sales.last30DaysRevenuePaise)}
+              </p>
               <p className="mt-1 text-xs text-neutral-500">
-                Real figures will appear after order and payment modules are implemented.
+                {sales.last30DaysOrders} paid order{sales.last30DaysOrders === 1 ? "" : "s"} · {sales.pendingOrders} pending/in-progress
               </p>
             </CardContent>
           </Card>
@@ -136,12 +181,12 @@ export default async function AdminDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Next Catalog Actions</CardTitle>
+            <CardTitle className="text-base">Next Store Actions</CardTitle>
           </CardHeader>
           <CardContent>
             <EmptyState
-              title="Use the catalog modules to add real business data"
-              description="Create the categories and brands the client actually sells, then add products and their SKU-specific pricing, electrical attributes, and stock."
+              title="Continue with client-confirmed business policies"
+              description="Tax, invoicing, delivery, COD, cancellation/refund, and notification behavior remain dependent on the client's business decisions and supplied details."
             />
           </CardContent>
         </Card>
