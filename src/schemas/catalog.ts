@@ -198,6 +198,12 @@ export const inventoryAdjustmentSchema = z.object({
   reason: z.string().trim().min(3).max(200),
 });
 
+export const inventorySetSchema = z.object({
+  variantId: objectIdSchema,
+  availableQuantity: z.number().finite().min(0).max(1_000_000_000),
+  reason: z.string().trim().min(3).max(200),
+});
+
 export type CategoryCreateInput = z.infer<typeof categoryCreateSchema>;
 export type CategoryUpdateInput = z.infer<typeof categoryUpdateSchema>;
 export type BrandCreateInput = z.infer<typeof brandCreateSchema>;
@@ -207,3 +213,4 @@ export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;
 export type VariantCreateInput = z.infer<typeof variantCreateSchema>;
 export type VariantUpdateInput = z.infer<typeof variantUpdateSchema>;
 export type InventoryAdjustmentInput = z.infer<typeof inventoryAdjustmentSchema>;
+export type InventorySetInput = z.infer<typeof inventorySetSchema>;
