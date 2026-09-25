@@ -163,6 +163,9 @@ export default async function AdminInventoryPage({
                           <span>{variant?.title || "Default SKU"}</span>
                           <span>{formatINRFromPaise(variant?.pricePaise ?? 0)}</span>
                           <span>Unit: {row.stockUnit}</span>
+                          <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+                            Available: {row.availableQuantity}
+                          </span>
                           <span>Reserved: {row.reservedQuantity}</span>
                           <span>Updated: {new Date(row.updatedAt).toLocaleDateString("en-IN")}</span>
                         </div>
