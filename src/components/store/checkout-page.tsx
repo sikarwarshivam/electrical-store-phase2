@@ -155,6 +155,9 @@ export function CheckoutPage() {
   useEffect(() => {
     if (!isHydrated || items.length === 0) return;
 
+    setPaymentOrder(null);
+    setPaymentError("");
+
     let active = true;
     setLoading(true);
     setIssues([]);
@@ -563,29 +566,51 @@ export function CheckoutPage() {
             <div className="flex justify-between text-sm">
               <span className="text-neutral-500">Subtotal</span>
               <span className="font-semibold">
-                {formatINRFromPaise(subtotalPaise)}
+                {formatINRFromPaise(
+                  paymentOrder?.subtotalPaise ?? subtotalPaise
+                )}
               </span>
             </div>
             <div className="mt-2 flex justify-between text-sm">
               <span className="text-neutral-500">Shipping</span>
-              <span className="font-semibold">To be calculated</span>
+              <span className="font-semibold">
+                {paymentOrder
+                  ? formatINRFromPaise(paymentOrder.shippingPaise)
+                  : "Calculated securely"}
+              </span>
             </div>
             <div className="mt-2 flex justify-between text-sm">
               <span className="text-neutral-500">Tax</span>
-              <span className="font-semibold">To be calculated</span>
+              <span className="font-semibold">
+                {paymentOrder
+                  ? formatINRFromPaise(paymentOrder.taxPaise)
+                  : "Calculated securely"}
+              </span>
             </div>
             <div className="mt-4 flex justify-between border-t border-neutral-200 pt-4 text-base dark:border-neutral-800">
               <span className="font-bold">Grand total</span>
               <span className="font-bold">
-                {formatINRFromPaise(subtotalPaise)}
+                {formatINRFromPaise(
+                  paymentOrder?.amountPaise ?? subtotalPaise
+                )}
               </span>
             </div>
+            {paymentOrder ? (
+              <p className="mt-3 text-xs text-neutral-500">
+                Payment order {paymentOrder.razorpayOrderId} is reserved until{" "}
+                {new Date(paymentOrder.reservationExpiresAt).toLocaleTimeString(
+                  "en-IN",
+                  { hour: "2-digit", minute: "2-digit" }
+                )}
+                .
+              </p>
+            ) : null}
           </div>
 
           <div className="mt-4 flex items-start gap-2 text-xs text-neutral-500">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-            Final order totals will be recalculated on the server when order
-            creation is enabled.
+            Final payment amount and stock are verified on the server before
+            the payment order is created.
           </div>
 
           <Link
