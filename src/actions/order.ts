@@ -2,14 +2,18 @@
 
 import { randomBytes } from "node:crypto";
 import mongoose from "mongoose";
-import { getCurrentUser } from "@/lib/auth-utils";
+import { getCurrentUser, requireAdmin } from "@/lib/auth-utils";
 import { connectToDatabase } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { createRazorpayOrder, fetchRazorpayPayment, getRazorpayKeyId, verifyRazorpayPaymentSignature } from "@/lib/razorpay";
 import { consumeOrderReservation, releaseExpiredOrderReservations, releaseOrderInventory, reserveOrderInventory } from "@/lib/order-commerce";
 import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
-import { createPaymentOrderSchema, verifyPaymentSchema } from "@/schemas/order";
+import {
+  adminOrderStatusSchema,
+  createPaymentOrderSchema,
+  verifyPaymentSchema,
+} from "@/schemas/order";
 import { reconcileCartAction } from "@/actions/cart";
 import type { IOrderLine } from "@/models/Order";
 
@@ -66,6 +70,41 @@ function calculateTax(
     taxPaise,
     taxIncludedPaise: 0,
     taxAddedPaise: taxPaise,
+  };
+}
+
+
+const ADMIN_ORDER_TRANSITIONS: Record<string, string[]> = {
+  PLACED: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["PACKED", "CANCELLED"],
+  PACKED: ["SHIPPED", "CANCELLED"],
+  SHIPPED: ["OUT_FOR_DELIVERY"],
+  OUT_FOR_DELIVERY: ["DELIVERED"],
+  DELIVERED: [],
+  CANCELLED: [],
+  FAILED: [],
+  PAYMENT_PENDING: [],
+  RETURNED: [],
+  REFUNDED: [],
+};
+
+function canAdminTransition(from: string, to: string) {
+  return ADMIN_ORDER_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
+function buildStatusEntry(
+  status: import("@/models/Order").OrderStatus,
+  changedBy?: string,
+  note?: string
+) {
+  return {
+    status,
+    changedAt: new Date(),
+    note: note || undefined,
+    changedBy:
+      changedBy && mongoose.Types.ObjectId.isValid(changedBy)
+        ? new mongoose.Types.ObjectId(changedBy)
+        : undefined,
   };
 }
 
@@ -255,6 +294,9 @@ export async function createPaymentOrderAction(
         grandTotalPaise,
       },
       status: "PAYMENT_PENDING",
+      statusHistory: [
+        buildStatusEntry("PAYMENT_PENDING", userId?.toString(), "Checkout payment initiated."),
+      ],
       payment: {
         method: "RAZORPAY",
         status: "PENDING",
@@ -452,6 +494,9 @@ export async function verifyRazorpayPaymentAction(
               "payment.failureCode": payment.error_code || "PAYMENT_FAILED",
               "payment.failureDescription": payment.error_description || "Razorpay payment failed.",
             },
+            $push: {
+              statusHistory: buildStatusEntry("FAILED", undefined, "Razorpay payment failed."),
+            },
           }
         );
         return { success: false, error: "Payment failed. Your reserved stock has been released." };
@@ -474,6 +519,9 @@ export async function verifyRazorpayPaymentAction(
           "payment.gatewayPaymentId": parsed.data.razorpayPaymentId,
           "payment.signatureVerifiedAt": new Date(),
         },
+        $push: {
+          statusHistory: buildStatusEntry("PLACED", undefined, "Razorpay payment verified."),
+        },
       }
     );
 
@@ -490,6 +538,67 @@ export async function verifyRazorpayPaymentAction(
         error instanceof Error
           ? error.message
           : "Payment verification failed. Please do not retry repeatedly; check your order status.",
+    };
+  }
+}
+
+
+export type UpdateOrderStatusResult =
+  | { success: true; orderNumber: string; status: string }
+  | { success: false; error: string };
+
+export async function updateOrderStatusAction(
+  input: unknown
+): Promise<UpdateOrderStatusResult> {
+  const parsed = adminOrderStatusSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid order status update request." };
+  }
+
+  try {
+    const admin = await requireAdmin("/admin/orders");
+    await connectToDatabase();
+
+    const order = await Order.findById(parsed.data.orderId);
+    if (!order) {
+      return { success: false, error: "Order not found." };
+    }
+
+    if (!canAdminTransition(order.status, parsed.data.status)) {
+      return {
+        success: false,
+        error:
+          "Order cannot move from " +
+          order.status.replaceAll("_", " ") +
+          " to " +
+          parsed.data.status.replaceAll("_", " ") +
+          ".",
+      };
+    }
+
+    order.status = parsed.data.status;
+    order.statusHistory.push(
+      buildStatusEntry(
+        parsed.data.status,
+        admin.id,
+        parsed.data.note || undefined
+      )
+    );
+    await order.save();
+
+    return {
+      success: true,
+      orderNumber: order.orderNumber,
+      status: order.status,
+    };
+  } catch (error) {
+    logger.error("Admin order status update failed", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to update the order status.",
     };
   }
 }
