@@ -48,6 +48,17 @@ function validPincode(value: string) {
   return /^\d{6}$/.test(value);
 }
 
+function sanitizeName(value: string) {
+  return value
+    .replace(/[^\p{L}\s.'-]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .slice(0, 120);
+}
+
+function sanitizeDigits(value: string, maxLength: number) {
+  return value.replace(/\D/g, "").slice(0, maxLength);
+}
+
 export function CheckoutPage() {
   const { items, isHydrated } = useCart();
   const [lines, setLines] = useState<CartReconcileLine[]>([]);
@@ -247,16 +258,52 @@ export function CheckoutPage() {
                   <input
                     type={type}
                     value={address[field]}
-                    onChange={(event) =>
-                      updateField(field, event.target.value)
-                    }
+                    onChange={(event) => {
+                      const rawValue = event.target.value;
+                      const value =
+                        field === "fullName"
+                          ? sanitizeName(rawValue)
+                          : field === "phone"
+                            ? sanitizeDigits(rawValue, 10)
+                            : field === "pincode"
+                              ? sanitizeDigits(rawValue, 6)
+                              : rawValue;
+
+                      updateField(field, value);
+                    }}
                     inputMode={
                       field === "phone" || field === "pincode"
                         ? "numeric"
                         : undefined
                     }
+                    pattern={
+                      field === "fullName"
+                        ? "[\\p{L} .'-]{2,120}"
+                        : field === "phone"
+                          ? "[6-9][0-9]{9}"
+                          : field === "pincode"
+                            ? "[0-9]{6}"
+                            : undefined
+                    }
                     maxLength={
-                      field === "phone" ? 10 : field === "pincode" ? 6 : undefined
+                      field === "fullName"
+                        ? 120
+                        : field === "phone"
+                          ? 10
+                          : field === "pincode"
+                            ? 6
+                            : undefined
+                    }
+                    autoComplete={
+                      field === "fullName"
+                        ? "name"
+                        : field === "phone"
+                          ? "tel"
+                          : field === "email"
+                            ? "email"
+                            : field === "pincode"
+                              ? "postal-code"
+                              : undefined
                     }
                     required={!["email", "landmark"].includes(field)}
                     className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-amber-500 dark:border-neutral-700 dark:bg-neutral-900"
