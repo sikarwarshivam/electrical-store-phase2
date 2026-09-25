@@ -3,6 +3,7 @@
 import { randomBytes } from "node:crypto";
 import mongoose from "mongoose";
 import { getCurrentUser, requireAdmin } from "@/lib/auth-utils";
+import { redirect } from "next/navigation";
 import { connectToDatabase } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { createRazorpayOrder, fetchRazorpayPayment, getRazorpayKeyId, verifyRazorpayPaymentSignature } from "@/lib/razorpay";
@@ -548,9 +549,17 @@ export type UpdateOrderStatusResult =
   | { success: false; error: string };
 
 export async function updateOrderStatusAction(
-  input: unknown
+  input: FormData | unknown
 ): Promise<UpdateOrderStatusResult> {
-  const parsed = adminOrderStatusSchema.safeParse(input);
+  const normalizedInput =
+    input instanceof FormData
+      ? {
+          orderId: input.get("orderId"),
+          status: input.get("status"),
+          note: input.get("note"),
+        }
+      : input;
+  const parsed = adminOrderStatusSchema.safeParse(normalizedInput);
   if (!parsed.success) {
     return { success: false, error: "Invalid order status update request." };
   }
@@ -586,19 +595,21 @@ export async function updateOrderStatusAction(
     );
     await order.save();
 
-    return {
-      success: true,
-      orderNumber: order.orderNumber,
-      status: order.status,
-    };
+    redirect(
+      "/admin/orders?updated=" +
+        encodeURIComponent(order.orderNumber) +
+        "&status=" +
+        encodeURIComponent(order.status)
+    );
   } catch (error) {
     logger.error("Admin order status update failed", error);
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unable to update the order status.",
-    };
+    redirect(
+      "/admin/orders?error=" +
+        encodeURIComponent(
+          error instanceof Error
+            ? error.message
+            : "Unable to update the order status."
+        )
+    );
   }
 }
