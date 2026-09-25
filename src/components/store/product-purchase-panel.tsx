@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { formatINRFromPaise } from "@/lib/money";
 import type { PublicVariant } from "@/lib/catalog";
+import { WishlistButton } from "@/components/store/wishlist-button";
 
 function roundQuantity(value: number, step: number) {
   const precision = Math.max(0, (step.toString().split(".")[1] || "").length);
@@ -26,12 +27,14 @@ export function ProductPurchasePanel({
   brandName,
   productImage,
   variants,
+  initialWishlisted = false,
 }: {
   productId: string;
   productName: string;
   brandName?: string;
   productImage?: string;
   variants: PublicVariant[];
+  initialWishlisted?: boolean;
 }) {
   const { addItem } = useCart();
   const defaultVariant = variants.find((variant) => variant.stockStatus === "IN_STOCK") || variants[0];
@@ -190,6 +193,10 @@ export function ProductPurchasePanel({
         </div>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          <WishlistButton
+            productId={productId}
+            initialWishlisted={initialWishlisted}
+          />
           <div className="flex h-11 items-center rounded-md border border-neutral-300 dark:border-neutral-700">
             <button
               type="button"
