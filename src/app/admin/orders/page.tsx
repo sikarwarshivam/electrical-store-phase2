@@ -11,6 +11,7 @@ export const metadata = {
 };
 
 const updateOrderStatusFormAction = async (formData: FormData): Promise<void> => {
+  "use server";
   await updateOrderStatusAction(formData);
 };
 
