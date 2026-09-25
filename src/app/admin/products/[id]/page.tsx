@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { CatalogMessage } from "@/components/admin/catalog-message";
 import { FieldLabel } from "@/components/admin/field-label";
 import {
+  adjustInventoryAction,
   archiveVariantAction,
   createVariantAction,
   unarchiveProductAction,
@@ -428,7 +429,12 @@ export default async function AdminProductDetailPage({
                 </div>
 
                 <div>
-                  <FieldLabel htmlFor="variant-stock">Initial stock</FieldLabel>
+                  <FieldLabel
+                    htmlFor="variant-stock"
+                    hint="Used only when creating this SKU. To change stock later, use the Inventory adjustment below."
+                  >
+                    Initial stock (new SKU)
+                  </FieldLabel>
                   <input
                     id="variant-stock"
                     name="initialStock"
@@ -768,8 +774,17 @@ export default async function AdminProductDetailPage({
 
                         <div className="space-y-4">
                           <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-                            <p className="text-xs font-medium text-neutral-500">Inventory</p>
-                            <div className="mt-2 grid grid-cols-2 gap-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold">Inventory</p>
+                                <p className="mt-1 text-xs text-neutral-500">
+                                  Stock quantity is managed separately from SKU details so every change can be recorded.
+                                </p>
+                              </div>
+                              <Badge variant="outline">Live stock</Badge>
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-2 gap-3">
                               <div>
                                 <p className="text-xs text-neutral-500">Available</p>
                                 <p className="text-xl font-bold">{stock?.availableQuantity ?? 0}</p>
@@ -797,6 +812,64 @@ export default async function AdminProductDetailPage({
                                 <p className="text-sm font-semibold">{stock?.stockUnit ?? variant.unitOfSale}</p>
                               </div>
                             </div>
+
+                            {variant.status !== "ARCHIVED" && stock?.trackInventory !== false ? (
+                              <form action={adjustInventoryAction} className="mt-5 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+                                <input type="hidden" name="variantId" value={id(variant._id)} />
+                                <input type="hidden" name="returnPath" value={"/admin/products/" + productId} />
+
+                                <div>
+                                  <p className="text-sm font-semibold">Adjust stock</p>
+                                  <p className="mt-1 text-xs leading-5 text-neutral-500">
+                                    Enter a positive number to add stock or a negative number to remove stock.
+                                    Every adjustment is recorded in inventory history.
+                                  </p>
+                                </div>
+
+                                <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1.5fr_auto] sm:items-end">
+                                  <div>
+                                    <FieldLabel htmlFor={"stock-adjust-" + id(variant._id)}>
+                                      Quantity adjustment
+                                    </FieldLabel>
+                                    <input
+                                      id={"stock-adjust-" + id(variant._id)}
+                                      name="quantityDelta"
+                                      type="number"
+                                      step="0.001"
+                                      required
+                                      placeholder="+10 or -2"
+                                      className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <FieldLabel htmlFor={"stock-reason-" + id(variant._id)}>
+                                      Reason
+                                    </FieldLabel>
+                                    <input
+                                      id={"stock-reason-" + id(variant._id)}
+                                      name="reason"
+                                      required
+                                      minLength={3}
+                                      maxLength={200}
+                                      placeholder="New shipment, stock correction..."
+                                      className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                    />
+                                  </div>
+
+                                  <Button type="submit" className="h-10">
+                                    <Save className="mr-1.5 h-4 w-4" />
+                                    Save stock
+                                  </Button>
+                                </div>
+                              </form>
+                            ) : (
+                              <div className="mt-5 rounded-md bg-neutral-50 p-3 text-xs text-neutral-500 dark:bg-neutral-900">
+                                {variant.status === "ARCHIVED"
+                                  ? "Archived SKUs cannot receive stock adjustments."
+                                  : "Inventory tracking is disabled for this SKU."}
+                              </div>
+                            )}
                           </div>
 
                           {variant.status === "ARCHIVED" ? (
