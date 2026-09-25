@@ -44,6 +44,19 @@ export function ProductPurchasePanel({
   const [quantity, setQuantity] = useState(selected.minOrderQuantity);
   const [added, setAdded] = useState(false);
 
+  const maxQuantity =
+    selected.trackInventory ? selected.availableQuantity : Number.POSITIVE_INFINITY;
+
+  function stockMessage() {
+    if (!selected.trackInventory) return "Available";
+    if (selected.stockStatus === "OUT_OF_STOCK") return "Out of stock";
+    const quantityText =
+      selected.availableQuantity % 1 === 0
+        ? String(selected.availableQuantity)
+        : selected.availableQuantity.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+    return `${selected.stockStatus === "LOW_STOCK" ? "Low stock" : "In stock"} · ${quantityText} ${selected.unitOfSale.toLowerCase()} available`;
+  }
+
   const discount =
     selected.mrpPaise > selected.pricePaise
       ? Math.round((1 - selected.pricePaise / selected.mrpPaise) * 100)
@@ -59,15 +72,19 @@ export function ProductPurchasePanel({
 
   function changeQuantity(value: number) {
     if (!Number.isFinite(value)) return;
-    const next = Math.max(selected.minOrderQuantity, value);
+    const max = selected.trackInventory ? selected.availableQuantity : Number.POSITIVE_INFINITY;
+    const next = Math.min(max, Math.max(selected.minOrderQuantity, value));
     setQuantity(roundQuantity(next, selected.orderQuantityStep));
     setAdded(false);
   }
 
   function addToCart() {
-    const safeQuantity = Math.max(
-      selected.minOrderQuantity,
-      roundQuantity(quantity, selected.orderQuantityStep)
+    const safeQuantity = Math.min(
+      maxQuantity,
+      Math.max(
+        selected.minOrderQuantity,
+        roundQuantity(quantity, selected.orderQuantityStep)
+      )
     );
 
     addItem({
@@ -159,6 +176,18 @@ export function ProductPurchasePanel({
         <p className="mt-1 text-xs text-neutral-500">
           Price per {selected.unitOfSale.toLowerCase()}. Server-side price and stock verification will be applied during checkout.
         </p>
+        <div
+          className={
+            "mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-semibold " +
+            (selected.stockStatus === "OUT_OF_STOCK"
+              ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+              : selected.stockStatus === "LOW_STOCK"
+                ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300")
+          }
+        >
+          {stockMessage()}
+        </div>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
           <div className="flex h-11 items-center rounded-md border border-neutral-300 dark:border-neutral-700">
@@ -176,6 +205,7 @@ export function ProductPurchasePanel({
               type="number"
               min={selected.minOrderQuantity}
               step={selected.orderQuantityStep}
+              max={selected.trackInventory ? selected.availableQuantity : undefined}
               className="h-full w-20 border-x border-neutral-300 bg-transparent text-center text-sm font-semibold outline-none dark:border-neutral-700"
               aria-label="Quantity"
             />
@@ -193,7 +223,11 @@ export function ProductPurchasePanel({
             type="button"
             className="h-11 flex-1"
             onClick={addToCart}
-            disabled={selected.stockStatus === "OUT_OF_STOCK"}
+            disabled={
+              selected.stockStatus === "OUT_OF_STOCK" ||
+              (selected.trackInventory && quantity > selected.availableQuantity) ||
+              (selected.trackInventory && selected.availableQuantity < selected.minOrderQuantity)
+            }
           >
             {added ? (
               <>
