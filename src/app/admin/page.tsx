@@ -63,16 +63,16 @@ export default async function AdminDashboardPage() {
       actions={
         <Badge variant="outline">
           <Package className="mr-1.5 h-3.5 w-3.5" />
-          Phase 2 · Catalog
+          Commerce · Phase 2
         </Badge>
       }
     >
       <div className="space-y-6">
         <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 p-4 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/20 dark:text-emerald-200">
-          <p className="font-semibold">Catalog foundation is active</p>
+          <p className="font-semibold">Commerce foundation is active</p>
           <p className="mt-1 text-xs leading-5">
-            Product, category, brand, SKU/variant, and inventory records are now backed by MongoDB.
-            Checkout, payment verification, customer order history, inventory reservation, and basic sales metrics are now active.
+            Product, category, brand, SKU/variant, inventory, checkout, Razorpay payment verification,
+            customer order history, inventory reservation, order lifecycle, and basic sales metrics are active.
           </p>
         </div>
 
