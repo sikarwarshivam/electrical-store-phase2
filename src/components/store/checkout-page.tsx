@@ -197,27 +197,28 @@ export function CheckoutPage() {
   useEffect(() => {
     if (!isHydrated || items.length === 0) return;
 
-    setPaymentOrder(null);
-    setPaymentError("");
-
     let active = true;
-    setLoading(true);
-    setIssues([]);
 
-    void reconcileCartAction({
-      items: items.map((item) => ({
-        variantId: item.variantId,
-        quantity: item.quantity,
-        unitPricePaise: item.unitPricePaise,
-      })),
-    })
-      .then((result) => {
+    async function reconcileCheckout() {
+      setPaymentOrder(null);
+      setPaymentError("");
+      setLoading(true);
+      setIssues([]);
+
+      try {
+        const result = await reconcileCartAction({
+          items: items.map((item) => ({
+            variantId: item.variantId,
+            quantity: item.quantity,
+            unitPricePaise: item.unitPricePaise,
+          })),
+        });
+
         if (!active) return;
         setLines(result.lines);
         setIssues(result.issues);
         setVerifiedSignature(signature);
-      })
-      .catch(() => {
+      } catch {
         if (!active) return;
         setLines([]);
         setIssues([
@@ -228,10 +229,12 @@ export function CheckoutPage() {
           },
         ]);
         setVerifiedSignature("");
-      })
-      .finally(() => {
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    }
+
+    void reconcileCheckout();
 
     return () => {
       active = false;
@@ -241,21 +244,25 @@ export function CheckoutPage() {
   }, [isHydrated, signature]);
 
   useEffect(() => {
-    if (sessionStatus !== "authenticated") {
-      setSavedAddresses([]);
-      setSelectedSavedAddressId("");
-      return;
-    }
-
     let active = true;
-    setSavedAddressesLoading(true);
 
-    void getCheckoutSavedAddressesAction()
-      .then((addresses) => {
+    async function loadSavedAddresses() {
+      if (sessionStatus !== "authenticated") {
+        setSavedAddresses([]);
+        setSelectedSavedAddressId("");
+        setSavedAddressesLoading(false);
+        return;
+      }
+
+      setSavedAddressesLoading(true);
+
+      try {
+        const addresses = await getCheckoutSavedAddressesAction();
         if (!active) return;
 
         setSavedAddresses(addresses);
-        const defaultAddress = addresses.find((item) => item.isDefault) || addresses[0];
+        const defaultAddress =
+          addresses.find((item) => item.isDefault) || addresses[0];
 
         if (defaultAddress) {
           setAddress((current) => {
@@ -275,13 +282,14 @@ export function CheckoutPage() {
             };
           });
         }
-      })
-      .catch(() => {
+      } catch {
         if (active) setSavedAddresses([]);
-      })
-      .finally(() => {
+      } finally {
         if (active) setSavedAddressesLoading(false);
-      });
+      }
+    }
+
+    void loadSavedAddresses();
 
     return () => {
       active = false;
