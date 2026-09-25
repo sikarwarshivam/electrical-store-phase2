@@ -408,7 +408,9 @@ export function CheckoutPage() {
 
   if (!isHydrated) {
     return (
-      <PageContainer title="Checkout" description="Loading checkout..." />
+      <PageContainer title="Checkout" description="Loading checkout...">
+        <div className="min-h-32" />
+      </PageContainer>
     );
   }
 
