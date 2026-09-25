@@ -807,4 +807,3 @@ export const getPublicProductBySlug = cache(async function getPublicProductBySlu
     relatedProducts: relatedData.products,
   };
 });
-}
