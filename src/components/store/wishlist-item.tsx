@@ -75,6 +75,7 @@ export function WishlistItem({ item }: { item: WishlistItemData }) {
           className="h-28 w-28 shrink-0 overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-900"
         >
           {item.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={item.imageUrl}
               alt={item.name}
