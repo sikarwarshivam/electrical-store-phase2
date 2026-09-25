@@ -128,7 +128,7 @@ export async function getWishlistItems() {
   return entries.flatMap((entry) => {
     const product =
       entry.product && typeof entry.product === "object"
-        ? (entry.product as {
+        ? (entry.product as unknown as {
             _id: mongoose.Types.ObjectId;
             name: string;
             slug: string;
