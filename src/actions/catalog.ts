@@ -1229,6 +1229,120 @@ export async function archiveVariantAction(formData: FormData) {
   redirectWithMessage(`/admin/products/${productId}`, "success", "Variant archived.");
 }
 
+export async function deleteVariantAction(formData: FormData) {
+  await getAdminActor();
+
+  const productId = text(formData, "productId");
+  const idResult = objectIdSchema.safeParse(text(formData, "id"));
+  if (!idResult.success) {
+    redirectWithMessage(
+      `/admin/products/${productId}`,
+      "error",
+      "Invalid variant identifier."
+    );
+  }
+
+  try {
+    await connectToDatabase();
+
+    const variant = await ProductVariant.findOne({
+      _id: idResult.data,
+      product: productId,
+    }).select("_id sku status isDefault");
+
+    if (!variant) {
+      redirectWithMessage(
+        `/admin/products/${productId}`,
+        "error",
+        "Variant not found."
+      );
+    }
+
+    const product = await Product.findById(productId).select(
+      "_id name status productType"
+    );
+    if (!product) {
+      redirectWithMessage(
+        `/admin/products/${productId}`,
+        "error",
+        "Product not found."
+      );
+    }
+
+    if (product!.status === "ACTIVE" && variant!.status === "ACTIVE") {
+      const otherActiveCount = await ProductVariant.countDocuments({
+        product: productId,
+        status: "ACTIVE",
+        _id: { $ne: idResult.data },
+      });
+
+      if (otherActiveCount === 0) {
+        redirectWithMessage(
+          `/admin/products/${productId}`,
+          "error",
+          "Cannot delete the last active SKU of an active product. Archive or deactivate the product first."
+        );
+      }
+    }
+
+    const deletedWasDefault = variant!.isDefault;
+
+    await InventoryTransaction.deleteMany({ variant: idResult.data });
+    await Inventory.deleteMany({ variant: idResult.data });
+    await ProductVariant.findByIdAndDelete(idResult.data);
+
+    const remainingActive = await ProductVariant.countDocuments({
+      product: productId,
+      status: "ACTIVE",
+    });
+
+    if (remainingActive > 0) {
+      const hasDefault = await ProductVariant.exists({
+        product: productId,
+        status: "ACTIVE",
+        isDefault: true,
+      });
+
+      if (deletedWasDefault || !hasDefault) {
+        await ProductVariant.updateMany(
+          { product: productId },
+          { isDefault: false }
+        );
+        const replacement = await ProductVariant.findOne({
+          product: productId,
+          status: "ACTIVE",
+        }).sort({ createdAt: 1 });
+
+        if (replacement) {
+          await ProductVariant.findByIdAndUpdate(replacement._id, {
+            isDefault: true,
+          });
+        }
+      }
+    }
+
+    revalidatePath(`/admin/products/${productId}`);
+    revalidatePath("/admin/products");
+    revalidatePath("/admin/inventory");
+    revalidatePath("/admin");
+    revalidatePath("/");
+    redirectWithMessage(
+      `/admin/products/${productId}`,
+      "success",
+      `SKU ${variant!.sku} deleted permanently.`
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      redirectWithMessage(
+        `/admin/products/${productId}`,
+        "error",
+        error.message
+      );
+    }
+    throw error;
+  }
+}
+
 export async function unarchiveVariantAction(formData: FormData) {
   await getAdminActor();
   const id = text(formData, "id");
@@ -1365,6 +1479,53 @@ export async function setInventoryStockAction(formData: FormData) {
   revalidatePath(safeReturnPath);
   revalidatePath("/");
   redirectWithMessage(safeReturnPath, "success", `Stock updated to ${nextQuantity}.`);
+}
+
+export async function cleanupOrphanInventoryAction(formData: FormData) {
+  await getAdminActor();
+  const returnPath = "/admin/inventory";
+
+  try {
+    await connectToDatabase();
+
+    const inventoryRows = await Inventory.find({}).select("_id variant").lean();
+    const variantIds = inventoryRows.map((row) => row.variant);
+    const existingVariantIds = await ProductVariant.distinct("_id", {
+      _id: { $in: variantIds },
+    });
+    const existing = new Set(existingVariantIds.map((value) => String(value)));
+    const orphanRows = inventoryRows.filter(
+      (row) => !existing.has(String(row.variant))
+    );
+    const orphanVariantIds = orphanRows.map((row) => row.variant);
+
+    if (orphanRows.length === 0) {
+      redirectWithMessage(returnPath, "success", "No orphan inventory records found.");
+    }
+
+    await InventoryTransaction.deleteMany({
+      variant: { $in: orphanVariantIds },
+    });
+    await Inventory.deleteMany({
+      _id: { $in: orphanRows.map((row) => row._id) },
+    });
+
+    revalidatePath(returnPath);
+    revalidatePath("/admin");
+    redirectWithMessage(
+      returnPath,
+      "success",
+      `Cleaned up ${orphanRows.length} orphan inventory record${orphanRows.length === 1 ? "" : "s"}.`
+    );
+  } catch (error) {
+    redirectWithMessage(
+      returnPath,
+      "error",
+      error instanceof Error
+        ? error.message
+        : "Unable to clean up orphan inventory records."
+    );
+  }
 }
 
 export async function adjustInventoryAction(formData: FormData) {
