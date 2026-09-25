@@ -130,7 +130,7 @@ function loadRazorpayCheckoutScript() {
 }
 
 export function CheckoutPage() {
-  const { items, isHydrated } = useCart();
+  const { items, isHydrated, clearCart } = useCart();
   const [lines, setLines] = useState<CartReconcileLine[]>([]);
   const [issues, setIssues] = useState<Array<{ variantId: string; message: string }>>([]);
   const [verifiedSignature, setVerifiedSignature] = useState("");
@@ -286,6 +286,7 @@ export function CheckoutPage() {
               return;
             }
 
+            clearCart();
             window.location.assign(
               "/order-success?order=" + encodeURIComponent(verified.orderNumber)
             );
