@@ -14,6 +14,7 @@ export interface CartStoreActions {
   clearCart: () => void;
   toggleCart: () => void;
   setCartOpen: (isOpen: boolean) => void;
+  syncItem: (variantId: string, data: Partial<Pick<CartItem, "sku" | "title" | "unitPricePaise" | "unitOfSale" | "image" | "brand">>) => void;
   getItemCount: () => number;
   getSubtotalPaise: () => number;
 }
@@ -90,6 +91,14 @@ export const useCartStore = create<CartStore>()(
 
       setCartOpen: (isOpen) => {
         set({ isOpen });
+      },
+
+      syncItem: (variantId, data) => {
+        set((state) => ({
+          items: state.items.map((item) =>
+            item.variantId === variantId ? { ...item, ...data } : item
+          ),
+        }));
       },
 
       getItemCount: () =>
