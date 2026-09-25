@@ -24,6 +24,19 @@ export default async function AdminOrdersPage({
 }) {
   const params = await searchParams;
   const orders = await getAdminOrders();
+  const afterTitle = (
+    <CatalogMessage
+      success={
+        params.updated
+          ? params.updated +
+            " updated to " +
+            (params.status || "new status").replaceAll("_", " ") +
+            "."
+          : undefined
+      }
+      error={params.error}
+    />
+  );
 
   return (
     <PageContainer
