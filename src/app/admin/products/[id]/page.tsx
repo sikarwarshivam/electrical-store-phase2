@@ -583,7 +583,7 @@ export default async function AdminProductDetailPage({
                       id={"variant-" + id(variant._id)}
                       key={id(variant._id)}
                       open={createdVariantId === id(variant._id)}
-                      className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
+                      className="scroll-mt-24 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
                     >
                       <summary className="cursor-pointer list-none">
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
