@@ -28,6 +28,13 @@ export type ReservationStatus =
   | "RELEASED"
   | "CONSUMED";
 
+export interface IOrderStatusHistoryEntry {
+  status: OrderStatus;
+  changedAt: Date;
+  note?: string;
+  changedBy?: mongoose.Types.ObjectId;
+}
+
 export interface IOrderAddress {
   fullName: string;
   phone: string;
@@ -106,12 +113,39 @@ export interface IOrder extends Document {
   items: IOrderLine[];
   pricing: IOrderPricing;
   status: OrderStatus;
+  statusHistory: IOrderStatusHistoryEntry[];
   payment: IOrderPayment;
   reservation: IOrderReservation;
   processedWebhookEventIds: string[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+const OrderStatusHistorySchema = new Schema<IOrderStatusHistoryEntry>(
+  {
+    status: {
+      type: String,
+      enum: [
+        "PAYMENT_PENDING",
+        "PLACED",
+        "CONFIRMED",
+        "PACKED",
+        "SHIPPED",
+        "OUT_FOR_DELIVERY",
+        "DELIVERED",
+        "CANCELLED",
+        "FAILED",
+        "RETURNED",
+        "REFUNDED",
+      ],
+      required: true,
+    },
+    changedAt: { type: Date, required: true, default: Date.now },
+    note: { type: String, trim: true, maxlength: 300 },
+    changedBy: { type: Schema.Types.ObjectId, ref: "User" },
+  },
+  { _id: false }
+);
 
 const OrderAddressSchema = new Schema<IOrderAddress>(
   {
@@ -260,6 +294,10 @@ const OrderSchema = new Schema<IOrder>(
       required: true,
       default: "PAYMENT_PENDING",
       index: true,
+    },
+    statusHistory: {
+      type: [OrderStatusHistorySchema],
+      default: [],
     },
     payment: {
       type: OrderPaymentSchema,
