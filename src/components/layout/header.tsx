@@ -78,6 +78,14 @@ export function Header() {
             <div className="h-8 w-20 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
           ) : user ? (
             <div className="flex items-center gap-2">
+              {!isAdmin ? (
+                <Link
+                  href="/account/orders"
+                  className="hidden text-sm font-semibold text-neutral-600 hover:text-amber-600 lg:inline-block dark:text-neutral-300 dark:hover:text-amber-500"
+                >
+                  My Orders
+                </Link>
+              ) : null}
               <div className="hidden lg:flex flex-col text-right">
                 <span className="text-xs font-semibold text-neutral-900 dark:text-neutral-100">
                   {user.name || user.email}
@@ -131,6 +139,22 @@ export function Header() {
                 {item.title}
               </Link>
             ))}
+            {!isAdmin ? (
+              <Link
+                href="/account/orders"
+                onClick={toggleMobileMenu}
+                className="text-sm font-medium text-neutral-700 hover:text-amber-600 dark:text-neutral-200"
+              >
+                My Orders
+              </Link>
+            ) : null}
+            <Link
+              href="/track-order"
+              onClick={toggleMobileMenu}
+              className="text-sm font-medium text-neutral-700 hover:text-amber-600 dark:text-neutral-200"
+            >
+              Track Order
+            </Link>
             {isAdmin && (
               <Link
                 href="/admin"
