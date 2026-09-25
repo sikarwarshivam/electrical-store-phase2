@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import {
@@ -148,6 +149,7 @@ function loadRazorpayCheckoutScript() {
 export function CheckoutPage() {
   const { items, isHydrated, clearCart } = useCart();
   const { status: sessionStatus } = useSession();
+  const router = useRouter();
   const [lines, setLines] = useState<CartReconcileLine[]>([]);
   const [issues, setIssues] = useState<Array<{ variantId: string; message: string }>>([]);
   const [verifiedSignature, setVerifiedSignature] = useState("");
@@ -386,7 +388,7 @@ export function CheckoutPage() {
             }
 
             clearCart();
-            window.location.assign(
+            router.push(
               "/order-success?order=" + encodeURIComponent(verified.orderNumber)
             );
           } catch {
