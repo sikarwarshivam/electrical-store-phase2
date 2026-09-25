@@ -10,6 +10,10 @@ export const metadata = {
   title: "Orders Management",
 };
 
+const updateOrderStatusFormAction = async (formData: FormData): Promise<void> => {
+  await updateOrderStatusAction(formData);
+};
+
 function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" | "success" | "warning" {
   if (status === "PLACED" || status === "CONFIRMED" || status === "DELIVERED") return "success";
   if (status === "PAYMENT_PENDING" || status === "PACKED" || status === "SHIPPED" || status === "OUT_FOR_DELIVERY") return "warning";
@@ -116,7 +120,7 @@ export default async function AdminOrdersPage({
                   order.status === "PACKED" ||
                   order.status === "SHIPPED" ||
                   order.status === "OUT_FOR_DELIVERY" ? (
-                    <form action={updateOrderStatusAction} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <form action={updateOrderStatusFormAction} className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       <input type="hidden" name="orderId" value={String(order._id)} />
                       <select
                         name="status"
