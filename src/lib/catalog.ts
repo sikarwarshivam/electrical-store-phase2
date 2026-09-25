@@ -1,3 +1,4 @@
+import { cache } from "react";
 import mongoose, { QueryFilter } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { Brand } from "@/models/Brand";
@@ -425,7 +426,7 @@ export async function getPublicBrands() {
   }));
 }
 
-export async function getPublicCategoryBySlug(slug: string) {
+export const getPublicCategoryBySlug = cache(async function getPublicCategoryBySlug(slug: string) {
   await connectToDatabase();
 
   const category = await Category.findOne({ slug, isActive: true })
@@ -457,7 +458,7 @@ export async function getPublicCategoryBySlug(slug: string) {
       imageUrl: child.imageUrl || undefined,
     })),
   };
-}
+});
 
 export async function getPublicProducts(options: {
   q?: string;
@@ -709,7 +710,7 @@ export async function getPublicProducts(options: {
   };
 }
 
-export async function getPublicProductBySlug(slug: string) {
+export const getPublicProductBySlug = cache(async function getPublicProductBySlug(slug: string) {
   await connectToDatabase();
 
   const product = await Product.findOne({
@@ -731,12 +732,21 @@ export async function getPublicProductBySlug(slug: string) {
     return null;
   }
 
-  const variants = await ProductVariant.find({
-    product: product._id,
-    status: "ACTIVE",
-  })
-    .sort({ isDefault: -1, pricePaise: 1 })
-    .lean();
+  const [variants, relatedData] = await Promise.all([
+    ProductVariant.find({
+      product: product._id,
+      status: "ACTIVE",
+    })
+      .sort({ isDefault: -1, pricePaise: 1 })
+      .lean(),
+    getPublicProducts({
+      categorySlug: category.slug,
+      page: 1,
+      pageSize: 8,
+      sort: "newest",
+      excludeProductId: stringId(product._id),
+    }),
+  ]);
 
   if (variants.length === 0) return null;
 
@@ -749,14 +759,6 @@ export async function getPublicProductBySlug(slug: string) {
   const publicVariants = variants.map((variant) =>
     publicVariant(variant, inventoryMap.get(stringId(variant._id)))
   );
-
-  const relatedData = await getPublicProducts({
-    categorySlug: category.slug,
-    page: 1,
-    pageSize: 8,
-    sort: "newest",
-    excludeProductId: stringId(product._id),
-  });
 
   return {
     id: stringId(product._id),
@@ -804,4 +806,5 @@ export async function getPublicProductBySlug(slug: string) {
     variants: publicVariants,
     relatedProducts: relatedData.products,
   };
+});
 }
