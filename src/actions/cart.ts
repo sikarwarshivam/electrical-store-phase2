@@ -24,6 +24,7 @@ type ReconcileInput = z.infer<typeof reconcileCartSchema>;
 export interface CartReconcileLine {
   variantId: string;
   productId?: string;
+  productSlug?: string;
   sku?: string;
   title?: string;
   unitPricePaise?: number;
@@ -101,7 +102,7 @@ export async function reconcileCartAction(
   const products = await Product.find({
     _id: { $in: productIds },
   })
-    .select("_id name category subcategory brand status images")
+    .select("_id name slug category subcategory brand status images")
     .lean();
 
   const productMap = new Map(
@@ -262,6 +263,7 @@ export async function reconcileCartAction(
     const line: CartReconcileLine = {
       variantId: item.variantId,
       productId: product ? String(product._id) : undefined,
+      productSlug: product?.slug,
       sku: variant.sku,
       title,
       unitPricePaise: variant.pricePaise,
