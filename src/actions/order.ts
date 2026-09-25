@@ -269,6 +269,19 @@ export async function createPaymentOrderAction(
         : undefined;
     const customerEmail = address.email || user?.email || undefined;
 
+    const orderItems = lines.map((line) => {
+      const orderLine = {
+        ...line,
+      } as IOrderLine & {
+        taxIncludedPaise?: number;
+        taxAddedPaise?: number;
+      };
+
+      delete orderLine.taxIncludedPaise;
+      delete orderLine.taxAddedPaise;
+      return orderLine;
+    });
+
     const order = new Order({
       orderNumber: createOrderNumber(),
       checkoutId,
@@ -283,7 +296,7 @@ export async function createPaymentOrderAction(
         email: address.email || undefined,
         landmark: address.landmark || undefined,
       },
-      items: lines.map(({ taxIncludedPaise: _taxIncluded, taxAddedPaise: _taxAdded, ...line }) => line),
+      items: orderItems,
       pricing: {
         currency: "INR",
         subtotalPaise,
