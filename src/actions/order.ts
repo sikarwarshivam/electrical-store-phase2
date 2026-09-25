@@ -84,6 +84,9 @@ export type CreatePaymentOrderResult =
       razorpayOrderId: string;
       razorpayKeyId: string;
       amountPaise: number;
+      subtotalPaise: number;
+      shippingPaise: number;
+      taxPaise: number;
       currency: "INR";
       reservationExpiresAt: string;
     }
@@ -119,6 +122,9 @@ export async function createPaymentOrderAction(
           razorpayOrderId: existing.payment.gatewayOrderId,
           razorpayKeyId: getRazorpayKeyId(),
           amountPaise: existing.pricing.grandTotalPaise,
+          subtotalPaise: existing.pricing.subtotalPaise,
+          shippingPaise: existing.pricing.shippingPaise,
+          taxPaise: existing.pricing.taxPaise,
           currency: "INR",
           reservationExpiresAt: existing.reservation.expiresAt.toISOString(),
         };
@@ -153,7 +159,7 @@ export async function createPaymentOrderAction(
       (line) => new mongoose.Types.ObjectId(line.productId!)
     );
     const products = await Product.find({ _id: { $in: productIds } })
-      .select("_id tax")
+      .select("_id name tax")
       .lean();
     const productMap = new Map(products.map((product) => [String(product._id), product]));
 
@@ -170,7 +176,7 @@ export async function createPaymentOrderAction(
         product: new mongoose.Types.ObjectId(line.productId!),
         variant: new mongoose.Types.ObjectId(line.variantId),
         sku: line.sku!,
-        productName: line.title?.split(" — ")[0] || line.title || line.sku!,
+        productName: product?.name || line.title || line.sku!,
         variantTitle: line.title?.includes(" — ")
           ? line.title.slice(line.title.indexOf(" — ") + 3)
           : undefined,
@@ -303,6 +309,9 @@ export async function createPaymentOrderAction(
         razorpayOrderId: razorpayOrder.id,
         razorpayKeyId: getRazorpayKeyId(),
         amountPaise: grandTotalPaise,
+        subtotalPaise,
+        shippingPaise,
+        taxPaise,
         currency: "INR",
         reservationExpiresAt: expiresAt.toISOString(),
       };
