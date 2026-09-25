@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import { toggleWishlistAction } from "@/actions/wishlist";
 
@@ -13,6 +14,7 @@ export function WishlistButton({
   initialWishlisted?: boolean;
   compact?: boolean;
 }) {
+  const router = useRouter();
   const [wishlisted, setWishlisted] = useState(initialWishlisted);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,7 +29,7 @@ export function WishlistButton({
       if (result.success) {
         setWishlisted(result.wishlisted);
       } else if (result.requiresLogin) {
-        window.location.assign(
+        router.push(
           "/login?callbackUrl=" +
             encodeURIComponent(window.location.pathname + window.location.search)
         );
