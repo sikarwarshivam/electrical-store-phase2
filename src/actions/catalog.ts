@@ -19,6 +19,7 @@ import {
   categoryCreateSchema,
   categoryUpdateSchema,
   inventoryAdjustmentSchema,
+  inventorySetSchema,
   objectIdSchema,
   productCreateSchema,
   productUpdateSchema,
@@ -1003,10 +1004,19 @@ export async function createVariantAction(formData: FormData) {
     revalidatePath(`/admin/products/${parsed.productId}`);
     revalidatePath("/admin/inventory");
     revalidatePath("/admin");
-    redirectWithMessage(
-      `/admin/products/${parsed.productId}`,
-      "success",
-      `Variant ${parsed.sku} created.`
+
+    const createdStatus = !parsed.trackInventory
+      ? "available without inventory tracking"
+      : initialQuantity <= 0
+        ? "currently out of stock"
+        : initialQuantity <= parsed.lowStockThreshold
+          ? `low stock (${initialQuantity} available)`
+          : `in stock (${initialQuantity} available)`;
+
+    redirect(
+      `/admin/products/${parsed.productId}?success=${encodeURIComponent(
+        `Variant ${parsed.sku} created — ${createdStatus}.`
+      )}&createdVariant=${encodeURIComponent(String(variant._id))}#variant-${encodeURIComponent(String(variant._id))}`
     );
   } catch (error) {
     if (isDuplicateKeyError(error)) {
@@ -1273,6 +1283,78 @@ export async function unarchiveVariantAction(formData: FormData) {
     throw error;
   }
 }
+export async function setInventoryStockAction(formData: FormData) {
+  const actor = await getAdminActor();
+  const requestedReturnPath = text(formData, "returnPath");
+  const safeReturnPath = /^\/admin\/products\/[a-fA-F0-9]{24}$/.test(requestedReturnPath)
+    ? requestedReturnPath
+    : "/admin/inventory";
+
+  let input;
+  try {
+    input = inventorySetSchema.parse({
+      variantId: text(formData, "variantId"),
+      availableQuantity: numberField(formData, "availableQuantity"),
+      reason: text(formData, "reason"),
+    });
+  } catch (error) {
+    redirectWithMessage(safeReturnPath, "error", zodMessage(error));
+  }
+
+  await connectToDatabase();
+
+  const inventory = await Inventory.findOne({ variant: input.variantId });
+  if (!inventory) {
+    redirectWithMessage(safeReturnPath, "error", "Inventory record not found.");
+  }
+
+  if (!inventory!.trackInventory) {
+    redirectWithMessage(
+      safeReturnPath,
+      "error",
+      "Inventory tracking is disabled for this SKU."
+    );
+  }
+
+  const currentQuantity = inventory!.availableQuantity;
+  const nextQuantity = input.availableQuantity;
+  const quantityDelta = nextQuantity - currentQuantity;
+
+  if (quantityDelta === 0) {
+    redirectWithMessage(
+      safeReturnPath,
+      "error",
+      "The new stock quantity is the same as the current quantity."
+    );
+  }
+
+  inventory!.availableQuantity = nextQuantity;
+  inventory!.stockStatus =
+    nextQuantity <= 0
+      ? "OUT_OF_STOCK"
+      : nextQuantity <= inventory!.lowStockThreshold
+        ? "LOW_STOCK"
+        : "IN_STOCK";
+
+  await inventory!.save();
+
+  await InventoryTransaction.create({
+    variant: input.variantId,
+    type: "CORRECTION",
+    quantityDelta,
+    balanceAfter: nextQuantity,
+    reason: input.reason,
+    performedBy: actor.id,
+  });
+
+  revalidatePath("/admin/inventory");
+  revalidatePath("/admin");
+  revalidatePath("/admin/products");
+  revalidatePath(safeReturnPath);
+  revalidatePath("/");
+  redirectWithMessage(safeReturnPath, "success", `Stock updated to ${nextQuantity}.`);
+}
+
 export async function adjustInventoryAction(formData: FormData) {
   const actor = await getAdminActor();
   const requestedReturnPath = text(formData, "returnPath");
