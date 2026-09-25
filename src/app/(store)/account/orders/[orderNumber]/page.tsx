@@ -48,19 +48,42 @@ export default async function CustomerOrderDetailPage({
               </Badge>
             </div>
 
-            <div className="mt-6 grid gap-3 md:grid-cols-6">
+            <div className="relative mt-7 grid gap-5 md:grid-cols-6 md:gap-3">
+              <div className="pointer-events-none absolute left-[8.333%] right-[8.333%] top-4 hidden h-1 -translate-y-1/2 rounded-full bg-neutral-200 dark:bg-neutral-800 md:block" />
+              <div
+                className="pointer-events-none absolute left-[8.333%] top-4 hidden h-1 -translate-y-1/2 rounded-full bg-amber-600 transition-[width] duration-300 md:block"
+                style={{
+                  width:
+                    currentStep > 0
+                      ? ((Math.min(currentStep, STEPS.length - 1) /
+                          (STEPS.length - 1)) *
+                          83.334) +
+                        "%"
+                      : "0%",
+                }}
+              />
+
               {STEPS.map((step, index) => {
                 const completed = currentStep >= index;
                 return (
-                  <div key={step} className="relative">
-                    <div className="flex items-center gap-2 md:block">
-                      <div className={"flex h-8 w-8 items-center justify-center rounded-full border " + (completed ? "border-amber-600 bg-amber-600 text-white" : "border-neutral-300 text-neutral-400 dark:border-neutral-700")}>
-                        {completed ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
-                      </div>
-                      <p className="mt-1 text-xs font-medium md:max-w-24">
-                        {step.replaceAll("_", " ")}
-                      </p>
+                  <div key={step} className="relative z-10 flex md:block">
+                    <div
+                      className={
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors " +
+                        (completed
+                          ? "border-amber-600 bg-amber-600 text-white"
+                          : "border-neutral-300 bg-white text-neutral-400 dark:border-neutral-700 dark:bg-neutral-950")
+                      }
+                    >
+                      {completed ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : (
+                        index + 1
+                      )}
                     </div>
+                    <p className="ml-3 mt-1 text-xs font-medium md:ml-0 md:max-w-24">
+                      {step.replaceAll("_", " ")}
+                    </p>
                   </div>
                 );
               })}
