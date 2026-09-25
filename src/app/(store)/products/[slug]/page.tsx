@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/store/product-card";
 import { ProductPurchasePanel } from "@/components/store/product-purchase-panel";
 import { getPublicProductBySlug } from "@/lib/catalog";
+import { getProductWishlistState } from "@/actions/wishlist";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,9 @@ export default async function ProductPage({
 }) {
   const { slug } = await params;
   const product = await getPublicProductBySlug(slug);
+  const initialWishlisted = product
+    ? await getProductWishlistState(product.id)
+    : false;
 
   if (!product) notFound();
 
@@ -152,6 +156,7 @@ export default async function ProductPage({
               brandName={product.brand?.name}
               productImage={primaryImage}
               variants={product.variants}
+              initialWishlisted={initialWishlisted}
             />
 
             <div className="grid gap-3 sm:grid-cols-2">
