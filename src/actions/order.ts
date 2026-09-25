@@ -322,15 +322,26 @@ export async function createPaymentOrderAction(
         reservationExpiresAt: expiresAt.toISOString(),
       };
     } catch (razorpayError) {
+      const gatewayMessage =
+        razorpayError instanceof Error
+          ? razorpayError.message
+          : "Razorpay order creation failed.";
+
+      logger.error("Razorpay order creation failed", razorpayError, {
+        orderId: order._id.toString(),
+      });
+
       try {
         await releaseOrderInventory(
           order._id.toString(),
           "Payment order creation failed."
         );
       } catch (releaseError) {
-        logger.error("Failed to release inventory after Razorpay order creation failure", releaseError, {
-          orderId: order._id.toString(),
-        });
+        logger.error(
+          "Failed to release inventory after Razorpay order creation failure",
+          releaseError,
+          { orderId: order._id.toString() }
+        );
       }
 
       await Order.updateOne(
@@ -341,17 +352,19 @@ export async function createPaymentOrderAction(
             "payment.status": "FAILED",
             "payment.failedAt": new Date(),
             "payment.failureCode": "RAZORPAY_ORDER_CREATE_FAILED",
-            "payment.failureDescription":
-              razorpayError instanceof Error
-                ? razorpayError.message
-                : "Razorpay order creation failed.",
+            "payment.failureDescription": gatewayMessage,
           },
         }
       );
 
       return {
         success: false,
-        error: "Payment setup failed. Your stock reservation has been released. Please try checkout again.",
+        error:
+          process.env.NODE_ENV === "development"
+            ? "Payment setup failed: " +
+              gatewayMessage +
+              " Your stock reservation has been released."
+            : "Payment setup failed. Your stock reservation has been released. Please try checkout again.",
       };
     }
   } catch (error) {
