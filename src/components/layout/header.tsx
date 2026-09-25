@@ -87,12 +87,20 @@ export function Header() {
           ) : user ? (
             <div className="flex items-center gap-2">
               {!isAdmin ? (
-                <Link
-                  href="/account/orders"
-                  className="hidden text-sm font-semibold text-neutral-600 hover:text-amber-600 lg:inline-block dark:text-neutral-300 dark:hover:text-amber-500"
-                >
-                  My Orders
-                </Link>
+                <>
+                  <Link
+                    href="/account"
+                    className="hidden text-sm font-semibold text-neutral-600 hover:text-amber-600 lg:inline-block dark:text-neutral-300 dark:hover:text-amber-500"
+                  >
+                    My Account
+                  </Link>
+                  <Link
+                    href="/account/orders"
+                    className="hidden text-sm font-semibold text-neutral-600 hover:text-amber-600 lg:inline-block dark:text-neutral-300 dark:hover:text-amber-500"
+                  >
+                    My Orders
+                  </Link>
+                </>
               ) : null}
               <div className="hidden lg:flex flex-col text-right">
                 <span className="text-xs font-semibold text-neutral-900 dark:text-neutral-100">
@@ -148,13 +156,22 @@ export function Header() {
               </Link>
             ))}
             {!isAdmin ? (
-              <Link
-                href="/account/orders"
-                onClick={toggleMobileMenu}
-                className="text-sm font-medium text-neutral-700 hover:text-amber-600 dark:text-neutral-200"
-              >
-                My Orders
-              </Link>
+              <>
+                <Link
+                  href="/account"
+                  onClick={toggleMobileMenu}
+                  className="text-sm font-medium text-neutral-700 hover:text-amber-600 dark:text-neutral-200"
+                >
+                  My Account
+                </Link>
+                <Link
+                  href="/account/orders"
+                  onClick={toggleMobileMenu}
+                  className="text-sm font-medium text-neutral-700 hover:text-amber-600 dark:text-neutral-200"
+                >
+                  My Orders
+                </Link>
+              </>
             ) : null}
             <Link
               href="/track-order"
