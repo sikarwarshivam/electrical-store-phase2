@@ -1300,7 +1300,7 @@ export async function adjustInventoryAction(formData: FormData) {
 
   if (!inventory!.trackInventory) {
     redirectWithMessage(
-      "/admin/inventory",
+      safeReturnPath,
       "error",
       "Inventory tracking is disabled for this SKU."
     );
