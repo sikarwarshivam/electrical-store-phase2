@@ -163,3 +163,23 @@ export async function getSavedAddresses(userId: string) {
     .sort({ isDefault: -1, createdAt: -1 })
     .lean();
 }
+
+
+export async function getCheckoutSavedAddressesAction() {
+  const user = await requireAuth("/checkout");
+  const addresses = await getSavedAddresses(user.id);
+
+  return addresses.map((address) => ({
+    id: address._id.toString(),
+    label: address.label,
+    fullName: address.fullName,
+    phone: address.phone,
+    pincode: address.pincode,
+    house: address.house,
+    street: address.street,
+    landmark: address.landmark || "",
+    city: address.city,
+    state: address.state,
+    isDefault: address.isDefault,
+  }));
+}
