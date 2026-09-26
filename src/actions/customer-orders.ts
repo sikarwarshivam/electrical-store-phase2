@@ -11,6 +11,7 @@ import { StoreSettings } from "@/models/StoreSettings";
 import { DEFAULT_STORE_SETTINGS } from "@/models/StoreSettings";
 import { Order } from "@/models/Order";
 import { cancelCustomerOrderSchema } from "@/schemas/order";
+import { sendOrderCancelledEmail, sendRefundProcessedEmail } from "@/lib/order-notifications";
 
 const guestTrackSchema = z.object({
   orderNumber: z.string().trim().min(5).max(40),
@@ -170,6 +171,17 @@ export async function cancelCustomerOrderAction(formData: FormData): Promise<nev
 
     await order!.save();
 
+    await sendOrderCancelledEmail({
+      ...order!.toObject(),
+      id: order!._id,
+    });
+    if (order!.payment.refundStatus === "PROCESSED") {
+      await sendRefundProcessedEmail({
+        ...order!.toObject(),
+        id: order!._id,
+      });
+    }
+
     const message =
       refund.status === "processed"
         ? "Order cancelled successfully. Your full payment refund has been initiated."
@@ -215,6 +227,17 @@ export async function cancelCustomerOrderAction(formData: FormData): Promise<nev
     }
 
     await order!.save();
+
+    await sendOrderCancelledEmail({
+      ...order!.toObject(),
+      id: order!._id,
+    });
+    if (order!.payment.refundStatus === "PROCESSED") {
+      await sendRefundProcessedEmail({
+        ...order!.toObject(),
+        id: order!._id,
+      });
+    }
 
     redirect(
       "/account/orders/" +
