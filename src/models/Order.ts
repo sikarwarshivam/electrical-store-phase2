@@ -92,7 +92,9 @@ export interface IOrderPayment {
   gatewayRefundId?: string;
   refundStatus?: "PENDING" | "PROCESSED" | "FAILED";
   refundAmountPaise?: number;
+  refundRequestedAt?: Date;
   refundedAt?: Date;
+  refundFailureDescription?: string;
   signatureVerifiedAt?: Date;
   webhookVerifiedAt?: Date;
   failedAt?: Date;
@@ -233,7 +235,13 @@ const OrderPaymentSchema = new Schema<IOrderPayment>(
       min: 0,
       max: Number.MAX_SAFE_INTEGER,
     },
+    refundRequestedAt: { type: Date },
     refundedAt: { type: Date },
+    refundFailureDescription: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
     signatureVerifiedAt: { type: Date },
     webhookVerifiedAt: { type: Date },
     failedAt: { type: Date },
