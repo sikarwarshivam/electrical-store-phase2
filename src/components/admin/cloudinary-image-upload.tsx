@@ -7,6 +7,7 @@ type CloudinaryImageUploadProps = {
   initialUrl?: string;
   acceptLabel?: string;
   aspectClassName?: string;
+  folder?: "banners" | "products" | "categories" | "variants";
 };
 
 const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
@@ -27,6 +28,7 @@ export function CloudinaryImageUpload({
   initialUrl = "",
   acceptLabel = "PNG, JPG, WEBP, or SVG · up to 8 MB",
   aspectClassName = "aspect-[16/9]",
+  folder = "banners",
 }: CloudinaryImageUploadProps) {
   const [imageUrl, setImageUrl] = useState(initialUrl);
   const [uploading, setUploading] = useState(false);
@@ -56,6 +58,8 @@ export function CloudinaryImageUpload({
     try {
       const signatureResponse = await fetch("/api/admin/cloudinary-signature", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder }),
       });
       const signatureData = await signatureResponse.json();
 
