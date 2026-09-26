@@ -29,7 +29,7 @@ export default async function AdminCouponsPage({
   searchParams: Promise<{ success?: string; error?: string }>;
 }) {
   const params = await searchParams;
-  const coupons = await getAdminCoupons();
+  const { coupons, now } = await getAdminCoupons();
 
   return (
     <PageContainer
@@ -169,7 +169,6 @@ export default async function AdminCouponsPage({
             </Card>
           ) : (
             coupons.map((coupon) => {
-              const now = Date.now();
               const expired = new Date(coupon.expiresAt).getTime() <= now;
               const scheduled = new Date(coupon.startsAt).getTime() > now;
               const exhausted =
