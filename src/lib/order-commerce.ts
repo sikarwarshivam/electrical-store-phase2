@@ -46,7 +46,7 @@ function referenceKey(orderId: string, variantId: string, type: string) {
 async function transactionExists(
   orderId: string,
   variantId: string,
-  type: "RESERVATION" | "RELEASE" | "SALE"
+  type: "RESERVATION" | "RELEASE" | "SALE" | "RETURN"
 ) {
   return Boolean(
     await InventoryTransaction.exists({
@@ -241,6 +241,59 @@ export async function consumeOrderReservation(orderId: string, reason: string) {
   order.reservation.status = "CONSUMED";
   order.reservation.consumedAt = new Date();
   await order.save();
+}
+
+export async function restockCancelledOrderInventory(
+  orderId: string,
+  reason: string
+) {
+  if (!isObjectId(orderId)) throw new Error("Invalid order identifier.");
+
+  const order = await Order.findById(orderId);
+  if (!order) throw new Error("Order not found.");
+
+  for (const item of order.items) {
+    const variantKey = item.variant.toString();
+
+    if (await transactionExists(orderId, variantKey, "RETURN")) {
+      continue;
+    }
+
+    const inventory = await Inventory.findOneAndUpdate(
+      {
+        variant: item.variant,
+        trackInventory: true,
+      },
+      {
+        $inc: {
+          availableQuantity: item.quantity,
+        },
+      },
+      { new: true }
+    );
+
+    if (!inventory) continue;
+
+    await updateStockStatus(
+      inventory._id,
+      inventory.availableQuantity,
+      inventory.trackInventory,
+      inventory.lowStockThreshold
+    );
+
+    await InventoryTransaction.create({
+      variant: item.variant,
+      type: "RETURN",
+      quantityDelta: item.quantity,
+      balanceAfter: inventory.availableQuantity,
+      reservedDelta: 0,
+      reservedAfter: inventory.reservedQuantity,
+      reason,
+      referenceType: "ORDER",
+      referenceId: referenceKey(orderId, variantKey, "RETURN"),
+      note: "Cancelled order restocked back into available inventory.",
+    });
+  }
 }
 
 export async function releaseExpiredOrderReservations() {
