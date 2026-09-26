@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FieldLabel } from "@/components/admin/field-label";
 import { CatalogMessage } from "@/components/admin/catalog-message";
+import { CloudinaryImageUpload } from "@/components/admin/cloudinary-image-upload";
 import {
   archiveCategoryAction,
   createCategoryAction,
@@ -111,15 +112,16 @@ export default async function AdminCategoriesPage({
               </div>
 
               <div>
-                <FieldLabel htmlFor="category-image" hint="Cloudinary integration arrives later.">
-                  Image URL
+                <FieldLabel hint="Use a clear category image that works well in a 16:9 card.">
+                  Category image
                 </FieldLabel>
-                <input
-                  id="category-image"
-                  name="imageUrl"
-                  type="url"
-                  className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                />
+                <div className="mt-1.5">
+                  <CloudinaryImageUpload
+                    name="imageUrl"
+                    folder="categories"
+                    aspectClassName="aspect-[16/9]"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -252,6 +254,19 @@ export default async function AdminCategoriesPage({
                               defaultValue={category.description ?? ""}
                               className="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
                             />
+                          </div>
+                          <div className="md:col-span-2">
+                            <FieldLabel hint="Upload a category image directly from your computer.">
+                              Category image
+                            </FieldLabel>
+                            <div className="mt-1.5">
+                              <CloudinaryImageUpload
+                                name="imageUrl"
+                                folder="categories"
+                                initialUrl={category.imageUrl ?? ""}
+                                aspectClassName="aspect-[16/9]"
+                              />
+                            </div>
                           </div>
                           <div>
                             <FieldLabel htmlFor={`parent-${categoryId(category._id)}`}>Parent</FieldLabel>
