@@ -508,13 +508,16 @@ export default async function AdminProductDetailPage({
                 </div>
 
                 <div>
-                  <FieldLabel htmlFor="variant-image">Variant image URL</FieldLabel>
-                  <input
-                    id="variant-image"
-                    name="imageUrl"
-                    type="url"
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                  />
+                  <FieldLabel hint="Optional image for this specific SKU/variant.">
+                    Variant image
+                  </FieldLabel>
+                  <div className="mt-1.5">
+                    <CloudinaryImageUpload
+                      name="imageUrl"
+                      folder="variants"
+                      aspectClassName="aspect-square"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -728,14 +731,17 @@ export default async function AdminProductDetailPage({
                               />
                             </div>
                             <div>
-                              <FieldLabel htmlFor={`edit-img-${id(variant._id)}`}>Image URL</FieldLabel>
-                              <input
-                                id={`edit-img-${id(variant._id)}`}
-                                name="imageUrl"
-                                type="url"
-                                defaultValue={variant.imageUrl ?? ""}
-                                className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                              />
+                              <FieldLabel hint="Optional image for this specific SKU/variant.">
+                                Variant image
+                              </FieldLabel>
+                              <div className="mt-1.5">
+                                <CloudinaryImageUpload
+                                  name="imageUrl"
+                                  folder="variants"
+                                  initialUrl={variant.imageUrl ?? ""}
+                                  aspectClassName="aspect-square"
+                                />
+                              </div>
                             </div>
                             <div>
                               <FieldLabel htmlFor={`edit-imgalt-${id(variant._id)}`}>Image alt</FieldLabel>
