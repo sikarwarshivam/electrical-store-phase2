@@ -34,9 +34,6 @@ export interface IStoreSettings extends Document {
         | "PLACED"
         | "CONFIRMED"
         | "PACKED";
-      paidCancellationFromStatus: "SHIPPED";
-      paidCancellationThroughStatus: "OUT_FOR_DELIVERY";
-      feePaise: number;
     };
   };
   createdAt: Date;
@@ -150,25 +147,6 @@ const StoreSettingsSchema = new Schema<IStoreSettings>(
           required: true,
           default: "PACKED",
         },
-        paidCancellationFromStatus: {
-          type: String,
-          enum: ["SHIPPED"],
-          required: true,
-          default: "SHIPPED",
-        },
-        paidCancellationThroughStatus: {
-          type: String,
-          enum: ["OUT_FOR_DELIVERY"],
-          required: true,
-          default: "OUT_FOR_DELIVERY",
-        },
-        feePaise: {
-          type: Number,
-          required: true,
-          min: 0,
-          max: Number.MAX_SAFE_INTEGER,
-          default: 0,
-        },
       },
     },
   },
@@ -208,9 +186,6 @@ export const DEFAULT_STORE_SETTINGS = {
     cancellation: {
       enabled: true,
       freeCancellationThroughStatus: "PACKED" as const,
-      paidCancellationFromStatus: "SHIPPED" as const,
-      paidCancellationThroughStatus: "OUT_FOR_DELIVERY" as const,
-      feePaise: 0,
     },
   },
 };
