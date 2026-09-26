@@ -1,47 +1,39 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import type { KeyboardEvent, TouchEvent } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
 import type { PublicBanner } from "@/actions/banner";
 
 interface PromoBannerCarouselProps {
   banners: PublicBanner[];
 }
 
+const ROTATION_MS = 5000;
+const SWIPE_THRESHOLD_PX = 48;
+
 function BannerContent({ banner }: { banner: PublicBanner }) {
   const content = (
-    <div className="group relative h-full w-full overflow-hidden bg-neutral-100 dark:bg-neutral-900">
+    <div className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
       <img
         src={banner.imageUrl}
         alt={banner.title}
-        className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.015]"
+        className="block aspect-[16/6] h-auto w-full object-contain"
         loading="lazy"
         decoding="async"
       />
-      <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-black/70 via-black/30 to-black/5" />
-      <div className="pointer-events-none absolute inset-y-0 left-0 flex w-full max-w-2xl flex-col justify-center px-5 py-8 sm:px-8 lg:px-10">
-        <div className="max-w-xl">
-          <h2 className="text-xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl">
-            {banner.title}
-          </h2>
-          {banner.subtitle ? (
-            <p className="mt-2 max-w-lg text-xs leading-5 text-white/85 sm:text-sm sm:leading-6 lg:text-base">
-              {banner.subtitle}
-            </p>
-          ) : null}
-          <span className="pointer-events-auto mt-4 inline-flex w-fit rounded-md bg-white px-3.5 py-2 text-xs font-bold text-neutral-900 shadow-sm transition-colors hover:bg-neutral-100 sm:mt-5 sm:px-4 sm:py-2.5 sm:text-sm">
-            Shop now
-          </span>
-        </div>
-      </div>
     </div>
   );
 
   if (banner.linkUrl.startsWith("/")) {
     return (
-      <Link href={banner.linkUrl} className="block h-full w-full">
+      <Link
+        href={banner.linkUrl}
+        className="block rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+        aria-label={banner.title}
+      >
         {content}
       </Link>
     );
@@ -52,7 +44,8 @@ function BannerContent({ banner }: { banner: PublicBanner }) {
       href={banner.linkUrl}
       target="_blank"
       rel="noreferrer"
-      className="block h-full w-full"
+      className="block rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+      aria-label={banner.title}
     >
       {content}
     </a>
@@ -62,102 +55,156 @@ function BannerContent({ banner }: { banner: PublicBanner }) {
 export function PromoBannerCarousel({
   banners,
 }: PromoBannerCarouselProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isFocused, setIsFocused] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+
   const hasMultiple = banners.length > 1;
 
-  const goToNext = useCallback(() => {
-    setCurrentIndex((index) => (index + 1) % banners.length);
-  }, [banners.length]);
-
-  const goToPrevious = useCallback(() => {
-    setCurrentIndex((index) => (index - 1 + banners.length) % banners.length);
+  useEffect(() => {
+    setActiveIndex((current) =>
+      Math.min(current, Math.max(0, banners.length - 1))
+    );
   }, [banners.length]);
 
   useEffect(() => {
-    if (!hasMultiple) return;
+    if (!hasMultiple || isFocused) return;
 
-    const interval = window.setInterval(goToNext, 5000);
-    return () => window.clearInterval(interval);
-  }, [goToNext, hasMultiple]);
+    const timer = window.setInterval(() => {
+      setActiveIndex((current) => (current + 1) % banners.length);
+    }, ROTATION_MS);
 
-  useEffect(() => {
-    if (currentIndex >= banners.length) {
-      setCurrentIndex(0);
-    }
-  }, [banners.length, currentIndex]);
+    return () => window.clearInterval(timer);
+  }, [banners.length, hasMultiple, isFocused]);
 
   if (banners.length === 0) return null;
+
+  function goTo(index: number) {
+    setActiveIndex((index + banners.length) % banners.length);
+  }
+
+  function goNext() {
+    goTo(activeIndex + 1);
+  }
+
+  function goPrevious() {
+    goTo(activeIndex - 1);
+  }
+
+  function handleTouchStart(event: TouchEvent) {
+    touchStartX.current = event.changedTouches[0]?.clientX ?? null;
+  }
+
+  function handleTouchEnd(event: TouchEvent) {
+    const startX = touchStartX.current;
+    const endX = event.changedTouches[0]?.clientX ?? null;
+
+    touchStartX.current = null;
+
+    if (startX === null || endX === null || !hasMultiple) return;
+
+    const deltaX = startX - endX;
+
+    if (Math.abs(deltaX) >= SWIPE_THRESHOLD_PX) {
+      if (deltaX > 0) {
+        goNext();
+      } else {
+        goPrevious();
+      }
+    }
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (!hasMultiple) return;
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      goNext();
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      goPrevious();
+    }
+  }
 
   return (
     <section
       aria-label="Promotional banners"
-      className="border-b border-neutral-200 bg-neutral-50 py-5 dark:border-neutral-800 dark:bg-neutral-900/30 sm:py-6"
+      aria-roledescription="carousel"
+      tabIndex={hasMultiple ? 0 : undefined}
+      onKeyDown={handleKeyDown}
+      onFocus={() => hasMultiple && setIsFocused(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setIsFocused(false);
+        }
+      }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className="border-b border-neutral-200 bg-neutral-50 py-4 dark:border-neutral-800 dark:bg-neutral-900/30"
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="relative">
-          <div className="relative aspect-[16/8] min-h-55 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:aspect-[16/7] sm:min-h-65 lg:aspect-[16/6] lg:min-h-75">
-            {banners.map((banner, index) => {
-              const isActive = index === currentIndex;
-              const isBefore = index < currentIndex;
-
-              return (
-                <div
-                  key={banner.id}
-                  className={
-                    "absolute inset-0 transition-[transform,opacity] duration-500 ease-out " +
-                    (isActive
-                      ? "translate-x-0 opacity-100"
-                      : isBefore
-                        ? "-translate-x-full opacity-0"
-                        : "translate-x-full opacity-0")
-                  }
-                  aria-hidden={!isActive}
-                >
-                  <BannerContent banner={banner} />
-                </div>
-              );
-            })}
-
-            {hasMultiple ? (
-              <>
-                <button
-                  type="button"
-                  aria-label="Previous banner"
-                  onClick={goToPrevious}
-                  className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/20 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-white/80 sm:left-4 sm:p-2.5"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Next banner"
-                  onClick={goToNext}
-                  className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/20 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-white/80 sm:right-4 sm:p-2.5"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-
-                <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/25 px-2.5 py-1.5 backdrop-blur-sm sm:bottom-4">
-                  {banners.map((banner, index) => (
-                    <button
-                      key={banner.id}
-                      type="button"
-                      aria-label={"Go to banner " + (index + 1)}
-                      aria-current={index === currentIndex}
-                      onClick={() => setCurrentIndex(index)}
-                      className={
-                        "h-1.5 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-white/80 " +
-                        (index === currentIndex
-                          ? "w-6 bg-white"
-                          : "w-1.5 bg-white/55 hover:bg-white/80")
-                      }
-                    />
-                  ))}
-                </div>
-              </>
-            ) : null}
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <div className="relative overflow-hidden rounded-xl">
+          <div
+            className="flex transition-transform duration-500 ease-out motion-reduce:transition-none"
+            style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+            aria-live={isFocused ? "polite" : "off"}
+          >
+            {banners.map((item, index) => (
+              <div
+                key={item.id}
+                className="w-full shrink-0"
+                role="group"
+                aria-roledescription="slide"
+                aria-label={`${index + 1} of ${banners.length}`}
+              >
+                <BannerContent banner={item} />
+              </div>
+            ))}
           </div>
+
+          {hasMultiple ? (
+            <>
+              <button
+                type="button"
+                aria-label="Previous banner"
+                onClick={goPrevious}
+                className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-black/35 text-white shadow-sm backdrop-blur-sm transition hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-white sm:left-3"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <button
+                type="button"
+                aria-label="Next banner"
+                onClick={goNext}
+                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-black/35 text-white shadow-sm backdrop-blur-sm transition hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-white sm:right-3"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </>
+          ) : null}
         </div>
+
+        {hasMultiple ? (
+          <div className="mt-2 flex items-center justify-center gap-1.5">
+            {banners.map((item, index) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-label={`Show banner ${index + 1}`}
+                aria-current={index === activeIndex}
+                onClick={() => goTo(index)}
+                className={
+                  index === activeIndex
+                    ? "h-1.5 w-6 rounded-full bg-neutral-900 transition-all dark:bg-white"
+                    : "h-1.5 w-1.5 rounded-full bg-neutral-300 transition-all hover:bg-neutral-500 dark:bg-neutral-700 dark:hover:bg-neutral-500"
+                }
+              />
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );
