@@ -117,6 +117,19 @@ function createOrderNumber() {
   return "ELC-" + yyyy + mm + dd + "-" + randomBytes(4).toString("hex").toUpperCase();
 }
 
+export type ValidateCouponResult =
+  | { success: true; code: string; discountPaise: number }
+  | { success: false; error: string };
+
+export async function validateCouponAction(input: unknown): Promise<ValidateCouponResult> {
+  const value = typeof input === "object" && input !== null ? input as { code?: unknown; subtotalPaise?: unknown } : {};
+  const code = typeof value.code === "string" ? value.code : "";
+  const subtotalPaise = typeof value.subtotalPaise === "number" ? value.subtotalPaise : -1;
+  const result = await calculateCouponDiscount(code, subtotalPaise);
+  if (!result.success) return result;
+  return { success: true, code: result.code, discountPaise: result.discountPaise };
+}
+
 export type CreatePaymentOrderResult =
   | {
       success: true;
