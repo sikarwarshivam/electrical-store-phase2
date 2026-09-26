@@ -325,6 +325,8 @@ export async function releaseExpiredOrderReservations() {
         claimed._id.toString(),
         "Payment reservation expired."
       );
+      const expiredOrder = await Order.findById(claimed._id).select("pricing.couponCode").lean();
+      if (expiredOrder?.pricing.couponCode) await releaseCouponUsage(expiredOrder.pricing.couponCode);
       await Order.updateOne(
         { _id: claimed._id },
         {
