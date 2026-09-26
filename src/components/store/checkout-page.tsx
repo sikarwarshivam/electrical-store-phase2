@@ -17,6 +17,7 @@ import { reconcileCartAction } from "@/actions/cart";
 import { getCheckoutSavedAddressesAction } from "@/actions/address";
 import {
   createPaymentOrderAction,
+  validateCouponAction,
   verifyRazorpayPaymentAction,
   type CreatePaymentOrderResult,
 } from "@/actions/order";
@@ -164,6 +165,10 @@ export function CheckoutPage() {
   const [savedAddresses, setSavedAddresses] = useState<CheckoutSavedAddress[]>([]);
   const [savedAddressesLoading, setSavedAddressesLoading] = useState(false);
   const [selectedSavedAddressId, setSelectedSavedAddressId] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPaise: number } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState("");
 
   function isAddressBlank(value: AddressState) {
     return !Object.values(value).some((field) => field.trim());
@@ -185,6 +190,39 @@ export function CheckoutPage() {
     setSubmitted(false);
     setPaymentOrder(null);
     setPaymentError("");
+    setAppliedCoupon(null);
+    setCouponError("");
+  }
+
+  async function applyCoupon() {
+    const code = couponCode.trim().toUpperCase();
+    if (!code) {
+      setCouponError("Enter a coupon code.");
+      return;
+    }
+    if (!cartVerified) {
+      setCouponError("Please wait while your cart is verified.");
+      return;
+    }
+    setCouponLoading(true);
+    setCouponError("");
+    try {
+      const result = await validateCouponAction({ code, subtotalPaise });
+      if (!result.success) {
+        setAppliedCoupon(null);
+        setCouponError(result.error);
+        return;
+      }
+      setAppliedCoupon({ code: result.code, discountPaise: result.discountPaise });
+      setCouponCode(result.code);
+      setPaymentOrder(null);
+      setPaymentError("");
+    } catch {
+      setAppliedCoupon(null);
+      setCouponError("Unable to validate this coupon right now.");
+    } finally {
+      setCouponLoading(false);
+    }
   }
 
   const signature = useMemo(
@@ -337,6 +375,7 @@ export function CheckoutPage() {
             unitPricePaise: item.unitPricePaise,
           })),
           address,
+          couponCode: appliedCoupon?.code || "",
         }));
 
       if (!order.success) {
@@ -727,6 +766,29 @@ export function CheckoutPage() {
             ))}
           </div>
 
+          <div className="mt-5 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
+            <p className="text-sm font-semibold">Coupon</p>
+            <div className="mt-2 flex gap-2">
+              <input
+                value={couponCode}
+                onChange={(event) => {
+                  setCouponCode(event.target.value.toUpperCase().slice(0, 40));
+                  setAppliedCoupon(null);
+                  setCouponError("");
+                  setPaymentOrder(null);
+                }}
+                placeholder="Enter coupon code"
+                maxLength={40}
+                className="h-10 min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-3 text-sm uppercase outline-none focus:border-amber-500 dark:border-neutral-700 dark:bg-neutral-950"
+              />
+              <Button type="button" variant="outline" onClick={() => void applyCoupon()} disabled={couponLoading || !cartVerified}>
+                {couponLoading ? "Checking..." : appliedCoupon ? "Applied" : "Apply"}
+              </Button>
+            </div>
+            {appliedCoupon ? <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">Coupon {appliedCoupon.code} applied.</p> : null}
+            {couponError ? <p className="mt-2 text-xs font-medium text-red-600">{couponError}</p> : null}
+          </div>
+
           <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-neutral-800">
             <div className="flex justify-between text-sm">
               <span className="text-neutral-500">Subtotal</span>
@@ -736,6 +798,12 @@ export function CheckoutPage() {
                 )}
               </span>
             </div>
+            {appliedCoupon ? (
+              <div className="mt-2 flex justify-between text-sm">
+                <span className="text-neutral-500">Discount</span>
+                <span className="font-semibold text-emerald-700 dark:text-emerald-400">- {formatINRFromPaise(appliedCoupon.discountPaise)}</span>
+              </div>
+            ) : null}
             <div className="mt-2 flex justify-between text-sm">
               <span className="text-neutral-500">Shipping</span>
               <span className="font-semibold">
