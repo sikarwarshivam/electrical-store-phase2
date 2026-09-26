@@ -55,15 +55,6 @@ export async function getStoreSettings() {
         freeCancellationThroughStatus:
           settings.delivery.cancellation.freeCancellationThroughStatus ??
           DEFAULT_STORE_SETTINGS.delivery.cancellation.freeCancellationThroughStatus,
-        paidCancellationFromStatus:
-          settings.delivery.cancellation.paidCancellationFromStatus ??
-          DEFAULT_STORE_SETTINGS.delivery.cancellation.paidCancellationFromStatus,
-        paidCancellationThroughStatus:
-          settings.delivery.cancellation.paidCancellationThroughStatus ??
-          DEFAULT_STORE_SETTINGS.delivery.cancellation.paidCancellationThroughStatus,
-        feePaise:
-          settings.delivery.cancellation.feePaise ??
-          DEFAULT_STORE_SETTINGS.delivery.cancellation.feePaise,
       }
     : DEFAULT_STORE_SETTINGS.delivery.cancellation;
 
@@ -98,11 +89,6 @@ export async function getStoreSettings() {
         enabled: cancellation.enabled,
         freeCancellationThroughStatus:
           cancellation.freeCancellationThroughStatus,
-        paidCancellationFromStatus:
-          cancellation.paidCancellationFromStatus,
-        paidCancellationThroughStatus:
-          cancellation.paidCancellationThroughStatus,
-        feePaise: cancellation.feePaise,
       },
     },
   };
@@ -130,7 +116,6 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
       formData.get("cancellationEnabled") === "off" ? "off" : "on",
     freeCancellationThroughStatus:
       value(formData, "freeCancellationThroughStatus") || "PACKED",
-    cancellationFee: value(formData, "cancellationFee"),
   });
 
   if (!parsed.success) {
@@ -215,9 +200,6 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
               enabled: parsed.data.cancellationEnabled === "on",
               freeCancellationThroughStatus:
                 parsed.data.freeCancellationThroughStatus,
-              paidCancellationFromStatus: "SHIPPED",
-              paidCancellationThroughStatus: "OUT_FOR_DELIVERY",
-              feePaise: cancellationFeePaise,
             },
           },
         },
