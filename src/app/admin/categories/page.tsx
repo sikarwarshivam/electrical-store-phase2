@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FieldLabel } from "@/components/admin/field-label";
 import { CatalogMessage } from "@/components/admin/catalog-message";
+import { CloudinaryImageUpload } from "@/components/admin/cloudinary-image-upload";
 import {
   archiveCategoryAction,
   createCategoryAction,
@@ -111,15 +112,15 @@ export default async function AdminCategoriesPage({
               </div>
 
               <div>
-                <FieldLabel htmlFor="category-image" hint="Cloudinary integration arrives later.">
-                  Image URL
+                <FieldLabel
+                  htmlFor="category-image"
+                  hint="Upload the category image directly to Cloudinary."
+                >
+                  Category image
                 </FieldLabel>
-                <input
-                  id="category-image"
-                  name="imageUrl"
-                  type="url"
-                  className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                />
+                <div id="category-image" className="mt-1.5">
+                  <CloudinaryImageUpload folder="categories" hiddenName="imageUrl" />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -252,6 +253,21 @@ export default async function AdminCategoriesPage({
                               defaultValue={category.description ?? ""}
                               className="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
                             />
+                          </div>
+                          <div className="md:col-span-2">
+                            <FieldLabel
+                              htmlFor={`image-${categoryId(category._id)}`}
+                              hint="Replace the category image without copying a URL."
+                            >
+                              Category image
+                            </FieldLabel>
+                            <div id={`image-${categoryId(category._id)}`} className="mt-1.5">
+                              <CloudinaryImageUpload
+                                folder="categories"
+                                hiddenName="imageUrl"
+                                initialUrl={category.imageUrl ?? ""}
+                              />
+                            </div>
                           </div>
                           <div>
                             <FieldLabel htmlFor={`parent-${categoryId(category._id)}`}>Parent</FieldLabel>

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CatalogMessage } from "@/components/admin/catalog-message";
 import { FieldLabel } from "@/components/admin/field-label";
+import { CloudinaryImageUpload } from "@/components/admin/cloudinary-image-upload";
+import { ProductImagesUpload } from "@/components/admin/product-images-upload";
 import { FocusCreatedVariant } from "@/components/admin/focus-created-variant";
 import {
   adjustInventoryAction,
@@ -313,15 +315,16 @@ export default async function AdminProductDetailPage({
                 />
               </div>
 
-              <div>
-                <FieldLabel htmlFor="detail-images">Images JSON</FieldLabel>
-                <textarea
-                  id="detail-images"
-                  name="imagesJson"
-                  rows={8}
-                  defaultValue={safeJson(product.images)}
-                  className="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 font-mono text-xs dark:border-neutral-700 dark:bg-neutral-900"
-                />
+              <div className="md:col-span-2">
+                <FieldLabel
+                  htmlFor="detail-images-upload"
+                  hint="Upload up to 8 product images, choose the primary image, and edit alt text."
+                >
+                  Product images
+                </FieldLabel>
+                <div id="detail-images-upload" className="mt-1.5">
+                  <ProductImagesUpload initialImages={product.images} />
+                </div>
               </div>
 
               <div className="md:col-span-2">
@@ -508,13 +511,10 @@ export default async function AdminProductDetailPage({
                 </div>
 
                 <div>
-                  <FieldLabel htmlFor="variant-image">Variant image URL</FieldLabel>
-                  <input
-                    id="variant-image"
-                    name="imageUrl"
-                    type="url"
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                  />
+                  <FieldLabel htmlFor="variant-image">Variant image</FieldLabel>
+                  <div className="mt-1.5">
+                    <CloudinaryImageUpload folder="variants" hiddenName="imageUrl" />
+                  </div>
                 </div>
 
                 <div>
@@ -728,14 +728,10 @@ export default async function AdminProductDetailPage({
                               />
                             </div>
                             <div>
-                              <FieldLabel htmlFor={`edit-img-${id(variant._id)}`}>Image URL</FieldLabel>
-                              <input
-                                id={`edit-img-${id(variant._id)}`}
-                                name="imageUrl"
-                                type="url"
-                                defaultValue={variant.imageUrl ?? ""}
-                                className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                              />
+                              <FieldLabel htmlFor={`edit-img-${id(variant._id)}`}>Variant image</FieldLabel>
+                              <div id={`edit-img-${id(variant._id)}`} className="mt-1.5">
+                                <CloudinaryImageUpload folder="variants" hiddenName="imageUrl" initialUrl={variant.imageUrl ?? ""} />
+                              </div>
                             </div>
                             <div>
                               <FieldLabel htmlFor={`edit-imgalt-${id(variant._id)}`}>Image alt</FieldLabel>

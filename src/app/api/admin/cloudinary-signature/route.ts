@@ -6,7 +6,14 @@ import {
 
 export const runtime = "nodejs";
 
-export async function POST() {
+const ALLOWED_FOLDERS = new Set([
+  "banners",
+  "products",
+  "categories",
+  "variants",
+]);
+
+export async function POST(request: Request) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -26,8 +33,22 @@ export async function POST() {
     );
   }
 
+  let requestedFolder = "banners";
+  try {
+    const body = (await request.json()) as { folder?: unknown };
+    if (typeof body.folder === "string" && body.folder.trim()) {
+      requestedFolder = body.folder.trim();
+    }
+  } catch {
+    // Banner uploader historically sends no body; keep banners as the default.
+  }
+
+  if (!ALLOWED_FOLDERS.has(requestedFolder)) {
+    return Response.json({ message: "Unsupported media folder." }, { status: 400 });
+  }
+
   const timestamp = Math.floor(Date.now() / 1000);
-  const folder = "electrical-store/banners";
+  const folder = "electrical-store/" + requestedFolder;
   const signature = signCloudinaryParams(
     { folder, timestamp },
     config.apiSecret
