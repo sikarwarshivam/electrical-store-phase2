@@ -91,11 +91,17 @@ export default async function AccountOrdersPage() {
         <details className="mt-6 rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
           <summary className="cursor-pointer list-none p-5">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-sm font-bold">Payment attempts</h2>
-                <p className="mt-1 text-xs text-neutral-500">
-                  Failed or unfinished payment attempts are kept separately from completed order history.
-                </p>
+              <div className="flex items-start gap-3">
+                <div>
+                  <h2 className="text-sm font-bold">Payment attempts</h2>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Failed or unfinished payment attempts are kept separately from completed order history.
+                  </p>
+                  <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                    Click an attempt to view details
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </p>
+                </div>
               </div>
               <Badge variant="outline">
                 {paymentAttempts.length} attempt{paymentAttempts.length === 1 ? "" : "s"}
@@ -111,7 +117,7 @@ export default async function AccountOrdersPage() {
                 <Link
                   key={String(order._id)}
                   href={"/account/orders/" + encodeURIComponent(order.orderNumber)}
-                  className="flex flex-col gap-3 border-b border-neutral-200 p-4 last:border-b-0 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900/60 sm:flex-row sm:items-center sm:justify-between"
+                  className="group flex flex-col gap-3 border-b border-neutral-200 p-4 last:border-b-0 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900/60 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -131,13 +137,18 @@ export default async function AccountOrdersPage() {
                     ) : null}
                   </div>
 
-                  <div className="shrink-0 sm:text-right">
-                    <p className="font-semibold">
-                      {formatINRFromPaise(order.pricing.grandTotalPaise)}
-                    </p>
-                    <p className="text-xs text-neutral-500">
-                      Payment: {order.payment.status}
-                    </p>
+                  <div className="flex shrink-0 items-center gap-3 sm:text-right">
+                    <div>
+                      <p className="font-semibold">
+                        {formatINRFromPaise(order.pricing.grandTotalPaise)}
+                      </p>
+                      <p className="text-xs text-neutral-500">
+                        Payment: {order.payment.status}
+                      </p>
+                    </div>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 transition-colors group-hover:border-amber-300 group-hover:bg-amber-50 group-hover:text-amber-700 dark:border-neutral-700 dark:bg-neutral-950 dark:group-hover:border-amber-700 dark:group-hover:bg-amber-950/30 dark:group-hover:text-amber-300">
+                      <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                    </div>
                   </div>
                 </Link>
               );
