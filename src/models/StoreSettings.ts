@@ -28,6 +28,14 @@ export interface IStoreSettings extends Document {
       selfDeliveryPincodes: string[];
       courierPincodes: string[];
     };
+    cancellation: {
+      enabled: boolean;
+      cancelableThroughStatus:
+        | "PLACED"
+        | "CONFIRMED"
+        | "PACKED";
+      feePaise: number;
+    };
   };
   createdAt: Date;
   updatedAt: Date;
@@ -132,6 +140,22 @@ const StoreSettingsSchema = new Schema<IStoreSettings>(
           default: [],
         },
       },
+      cancellation: {
+        enabled: { type: Boolean, required: true, default: true },
+        cancelableThroughStatus: {
+          type: String,
+          enum: ["PLACED", "CONFIRMED", "PACKED"],
+          required: true,
+          default: "PACKED",
+        },
+        feePaise: {
+          type: Number,
+          required: true,
+          min: 0,
+          max: Number.MAX_SAFE_INTEGER,
+          default: 0,
+        },
+      },
     },
   },
   { timestamps: true }
@@ -166,6 +190,11 @@ export const DEFAULT_STORE_SETTINGS = {
     serviceability: {
       selfDeliveryPincodes: [],
       courierPincodes: [],
+    },
+    cancellation: {
+      enabled: true,
+      cancelableThroughStatus: "PACKED" as const,
+      feePaise: 0,
     },
   },
 };
