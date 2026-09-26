@@ -20,6 +20,25 @@ function errorRedirect(message: string): never {
   redirect("/admin/settings?error=" + encodeURIComponent(message));
 }
 
+function parsePincodeList(raw: string): string[] {
+  const values = raw
+    .split(/[\s,;]+/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  const unique = [...new Set(values)];
+  if (unique.length > 1000) {
+    throw new Error("A serviceable pincode list cannot contain more than 1000 entries.");
+  }
+
+  const invalid = unique.find((pincode) => !/^\d{6}$/.test(pincode));
+  if (invalid) {
+    throw new Error(`Invalid pincode "${invalid}". Enter Indian 6-digit pincodes only.`);
+  }
+
+  return unique;
+}
+
 export async function getStoreSettings() {
   await connectToDatabase();
 
@@ -27,6 +46,9 @@ export async function getStoreSettings() {
   if (!settings) return DEFAULT_STORE_SETTINGS;
 
   const codSettings = settings.delivery.cod ?? DEFAULT_STORE_SETTINGS.delivery.cod;
+  const serviceability =
+    settings.delivery.serviceability ??
+    DEFAULT_STORE_SETTINGS.delivery.serviceability;
 
   return {
     key: "default" as const,
@@ -51,6 +73,10 @@ export async function getStoreSettings() {
         maxOrderValuePaise: codSettings.maxOrderValuePaise,
         convenienceFeePaise: codSettings.convenienceFeePaise,
       },
+      serviceability: {
+        selfDeliveryPincodes: serviceability.selfDeliveryPincodes,
+        courierPincodes: serviceability.courierPincodes,
+      },
     },
   };
 }
@@ -71,6 +97,8 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
     codMinOrderValue: value(formData, "codMinOrderValue"),
     codMaxOrderValue: value(formData, "codMaxOrderValue"),
     codConvenienceFee: value(formData, "codConvenienceFee"),
+    selfDeliveryPincodes: value(formData, "selfDeliveryPincodes"),
+    courierPincodes: value(formData, "courierPincodes"),
   });
 
   if (!parsed.success) {
@@ -91,6 +119,17 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
     if (codMaxOrderValuePaise <= 0 || codMaxOrderValuePaise < codMinOrderValuePaise) {
       errorRedirect("When COD is enabled, the maximum order value must be greater than or equal to the minimum.");
     }
+  }
+
+  let selfDeliveryPincodes: string[];
+  let courierPincodes: string[];
+  try {
+    selfDeliveryPincodes = parsePincodeList(parsed.data.selfDeliveryPincodes);
+    courierPincodes = parsePincodeList(parsed.data.courierPincodes);
+  } catch (error) {
+    errorRedirect(
+      error instanceof Error ? error.message : "Invalid serviceable pincodes."
+    );
   }
 
   try {
@@ -133,6 +172,10 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
               minOrderValuePaise: codMinOrderValuePaise,
               maxOrderValuePaise: codMaxOrderValuePaise,
               convenienceFeePaise: parseMoneyToPaise(parsed.data.codConvenienceFee),
+            },
+            serviceability: {
+              selfDeliveryPincodes,
+              courierPincodes,
             },
           },
         },
