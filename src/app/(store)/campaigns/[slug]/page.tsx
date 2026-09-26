@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { PageContainer } from "@/components/layout/page-container";
 import { ProductCard } from "@/components/store/product-card";
 import { getPublicCampaignBySlug } from "@/actions/campaign";
+import "@/models/Brand";
+import "@/models/Category";
 
 export const dynamic = "force-dynamic";
 
