@@ -58,7 +58,6 @@ export async function sendTransactionalEmail(message: EmailMessage) {
         from: config.from,
         to: [message.to],
         ...(config.replyTo ? { reply_to: config.replyTo } : {}),
-        subject: message.subject,
         html: message.html,
         text: message.text,
       }),
@@ -70,7 +69,6 @@ export async function sendTransactionalEmail(message: EmailMessage) {
       logger.error("Transactional email provider rejected the message", undefined, {
         status: response.status,
         body: providerBody.slice(0, 500),
-        to: message.to,
         subject: message.subject,
       });
       return;
