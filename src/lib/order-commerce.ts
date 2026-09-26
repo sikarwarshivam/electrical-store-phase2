@@ -500,7 +500,7 @@ export async function calculateCouponDiscount(code: string, subtotalPaise: numbe
   }).lean();
 
   if (!coupon) return { success: false, error: "This coupon is invalid or expired." };
-  if (coupon.usageLimit > 0 && coupon.usedCount + coupon.reservedCount >= coupon.usageLimit) {
+  if (coupon.usageLimit > 0 && coupon.usedCount + (coupon.reservedCount ?? 0) >= coupon.usageLimit) {
     return { success: false, error: "This coupon has reached its usage limit." };
   }
   if (subtotalPaise < coupon.minOrderValuePaise) {
