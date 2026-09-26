@@ -53,6 +53,14 @@ export const verifyPaymentSchema = z.object({
 export type CreatePaymentOrderInput = z.infer<typeof createPaymentOrderSchema>;
 export type VerifyPaymentInput = z.infer<typeof verifyPaymentSchema>;
 
+export const cancelCustomerOrderSchema = z.object({
+  orderNumber: z.string().trim().min(5).max(40),
+});
+
+export type CancelCustomerOrderInput = z.infer<
+  typeof cancelCustomerOrderSchema
+>;
+
 export const adminOrderStatusSchema = z.object({
   orderId: objectIdSchema,
   status: z.enum([
