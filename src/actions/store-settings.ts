@@ -49,6 +49,9 @@ export async function getStoreSettings() {
   const serviceability =
     settings.delivery.serviceability ??
     DEFAULT_STORE_SETTINGS.delivery.serviceability;
+  const cancellation =
+    settings.delivery.cancellation ??
+    DEFAULT_STORE_SETTINGS.delivery.cancellation;
 
   return {
     key: "default" as const,
@@ -77,6 +80,11 @@ export async function getStoreSettings() {
         selfDeliveryPincodes: serviceability.selfDeliveryPincodes,
         courierPincodes: serviceability.courierPincodes,
       },
+      cancellation: {
+        enabled: cancellation.enabled,
+        cancelableThroughStatus: cancellation.cancelableThroughStatus,
+        feePaise: cancellation.feePaise,
+      },
     },
   };
 }
@@ -99,6 +107,13 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
     codConvenienceFee: value(formData, "codConvenienceFee"),
     selfDeliveryPincodes: value(formData, "selfDeliveryPincodes"),
     courierPincodes: value(formData, "courierPincodes"),
+    cancellationEnabled:
+      formData.get("cancellationEnabled") === "off" ? "off" : "on",
+    cancellationThroughStatus: value(
+      formData,
+      "cancellationThroughStatus"
+    ) || "PACKED",
+    cancellationFee: value(formData, "cancellationFee"),
   });
 
   if (!parsed.success) {
@@ -131,6 +146,8 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
       error instanceof Error ? error.message : "Invalid serviceable pincodes."
     );
   }
+
+  const cancellationFeePaise = parseMoneyToPaise(parsed.data.cancellationFee);
 
   try {
     await connectToDatabase();
@@ -176,6 +193,11 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
             serviceability: {
               selfDeliveryPincodes,
               courierPincodes,
+            },
+            cancellation: {
+              enabled: parsed.data.cancellationEnabled === "on",
+              cancelableThroughStatus: parsed.data.cancellationThroughStatus,
+              feePaise: cancellationFeePaise,
             },
           },
         },
