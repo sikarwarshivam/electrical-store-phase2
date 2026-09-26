@@ -42,6 +42,13 @@ export const createPaymentOrderSchema = z.object({
     .max(100),
   items: z.array(checkoutCartItemSchema).min(1).max(100),
   address: checkoutAddressSchema,
+  couponCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .max(40, "Coupon code is too long.")
+    .optional()
+    .or(z.literal("")),
 });
 
 export const verifyPaymentSchema = z.object({
