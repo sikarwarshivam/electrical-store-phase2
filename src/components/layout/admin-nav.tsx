@@ -12,6 +12,7 @@ import {
   Tag,
   Settings,
   BadgeCheck,
+  Image,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Tag,
   Settings,
   BadgeCheck,
+  Image,
 };
 
 interface AdminNavProps {

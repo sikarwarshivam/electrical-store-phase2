@@ -7,13 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/store/product-card";
 import { getPublicCategories, getPublicProducts } from "@/lib/catalog";
+import { getActiveBanners } from "@/actions/banner";
+import { PromoBannerCarousel } from "@/components/store/promo-banner-carousel";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [categories, catalog] = await Promise.all([
+  const [categories, catalog, banners] = await Promise.all([
     getPublicCategories(),
     getPublicProducts({ page: 1, pageSize: 8, sort: "newest" }),
+    getActiveBanners(),
   ]);
 
   return (
@@ -49,6 +52,8 @@ export default async function HomePage() {
           </div>
         </PageContainer>
       </section>
+
+      <PromoBannerCarousel banners={banners} />
 
       <section id="categories" className="py-12">
         <PageContainer
