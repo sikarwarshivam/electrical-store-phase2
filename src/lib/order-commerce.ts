@@ -525,7 +525,7 @@ export async function reserveCouponUsage(code: string) {
       expiresAt: { $gt: new Date() },
       $expr: { $or: [
         { $eq: ["$usageLimit", 0] },
-        { $lt: [{ $add: ["$usedCount", "$reservedCount"] }, "$usageLimit"] },
+        { $lt: [{ $add: ["$usedCount", { $ifNull: ["$reservedCount", 0] }] }, "$usageLimit"] },
       ] },
     },
     { $inc: { reservedCount: 1 } },
