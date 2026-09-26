@@ -824,7 +824,8 @@ export function CheckoutPage() {
               <span className="font-bold">Grand total</span>
               <span className="font-bold">
                 {formatINRFromPaise(
-                  paymentOrder?.amountPaise ?? subtotalPaise
+                  paymentOrder?.amountPaise ??
+                    (subtotalPaise - (appliedCoupon?.discountPaise ?? 0))
                 )}
               </span>
             </div>
