@@ -180,7 +180,7 @@ export async function updateCouponAction(formData: FormData) {
   successRedirect("Coupon updated.");
 }
 
-export async function createCouponAction(formData: FormData)
+export async function createCouponAction(formData: FormData) {
   await requireAdmin("/admin/coupons");
 
   const parsed = couponCreateSchema.safeParse({
