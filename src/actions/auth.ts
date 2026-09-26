@@ -6,8 +6,6 @@ import { connectToDatabase } from "@/lib/db";
 import { User } from "@/models/User";
 import bcrypt from "bcryptjs";
 import { logger } from "@/lib/logger";
-import { createSafeAction } from "@/lib/safe-action";
-
 export const validateCredentialsAction = createSafeAction<
   LoginInput,
   { valid: boolean; email: string; role?: string }
