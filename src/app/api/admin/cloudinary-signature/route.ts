@@ -6,7 +6,16 @@ import {
 
 export const runtime = "nodejs";
 
-export async function POST() {
+const FOLDERS = {
+  banners: "electrical-store/banners",
+  products: "electrical-store/products",
+  categories: "electrical-store/categories",
+  variants: "electrical-store/variants",
+} as const;
+
+type FolderKey = keyof typeof FOLDERS;
+
+export async function POST(request: Request) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -26,8 +35,19 @@ export async function POST() {
     );
   }
 
+  let folderKey: FolderKey = "banners";
+
+  try {
+    const body = await request.json();
+    if (body && typeof body.folder === "string" && body.folder in FOLDERS) {
+      folderKey = body.folder as FolderKey;
+    }
+  } catch {
+    // No body means the default banners folder is used.
+  }
+
   const timestamp = Math.floor(Date.now() / 1000);
-  const folder = "electrical-store/banners";
+  const folder = FOLDERS[folderKey];
   const signature = signCloudinaryParams(
     { folder, timestamp },
     config.apiSecret
