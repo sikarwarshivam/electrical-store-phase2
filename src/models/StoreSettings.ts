@@ -83,7 +83,7 @@ const StoreSettingsSchema = new Schema<IStoreSettings>(
           required: true,
           min: 0,
           max: Number.MAX_SAFE_INTEGER,
-          default: 0,
+          default: 10000,
         },
       },
     },
@@ -109,7 +109,7 @@ export const DEFAULT_STORE_SETTINGS = {
     },
     courier: {
       pricingMode: "MANUAL_CONFIGURATION" as const,
-      flatFeePaise: 0,
+      flatFeePaise: 10000,
     },
   },
 };
