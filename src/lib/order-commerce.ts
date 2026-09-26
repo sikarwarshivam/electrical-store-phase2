@@ -355,6 +355,7 @@ export async function releaseExpiredOrderReservations() {
 
 export async function getAdminOrders(limit = 50) {
   await connectToDatabase();
+  await releaseExpiredOrderReservations();
 
   const orders = await Order.find({})
     .sort({ createdAt: -1 })
@@ -365,11 +366,30 @@ export async function getAdminOrders(limit = 50) {
 }
 
 
+const PAYMENT_ATTEMPT_RETENTION_DAYS = 7;
+
 export async function getCustomerOrders(userId: string, limit = 50) {
   if (!isObjectId(userId)) return [];
   await connectToDatabase();
+  await releaseExpiredOrderReservations();
 
-  return Order.find({ "customer.userId": new mongoose.Types.ObjectId(userId) })
+  const cutoff = new Date(Date.now() - PAYMENT_ATTEMPT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  const customerObjectId = new mongoose.Types.ObjectId(userId);
+
+  return Order.find({
+    "customer.userId": customerObjectId,
+    $or: [
+      { status: { $nin: ["PAYMENT_PENDING", "FAILED"] } },
+      {
+        $or: [
+          { status: "PAYMENT_PENDING" },
+          { status: "FAILED" },
+          { "payment.status": "FAILED" },
+        ],
+        createdAt: { $gte: cutoff },
+      },
+    ],
+  })
     .sort({ createdAt: -1 })
     .limit(Math.min(Math.max(limit, 1), 100))
     .lean();
