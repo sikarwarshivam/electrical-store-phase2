@@ -23,6 +23,8 @@ export const storeDeliverySettingsSchema = z.object({
   codMinOrderValue: moneyRupeesSchema,
   codMaxOrderValue: moneyRupeesSchema,
   codConvenienceFee: moneyRupeesSchema,
+  selfDeliveryPincodes: z.string().max(20000).default(""),
+  courierPincodes: z.string().max(20000).default(""),
 });
 
 export type StoreDeliverySettingsInput = z.infer<
