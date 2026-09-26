@@ -42,9 +42,14 @@ export async function getAdminCoupons() {
   await requireAdmin("/admin/coupons");
   await connectToDatabase();
 
-  return Coupon.find({})
+  const coupons = await Coupon.find({})
     .sort({ isActive: -1, expiresAt: 1, createdAt: -1 })
     .lean();
+
+  return {
+    coupons,
+    now: Date.now(),
+  };
 }
 
 export async function createCouponAction(formData: FormData) {
