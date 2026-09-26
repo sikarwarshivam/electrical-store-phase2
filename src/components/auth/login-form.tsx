@@ -149,6 +149,15 @@ export function LoginForm() {
           <Button type="submit" className="w-full" isLoading={isLoading}>
             Sign In
           </Button>
+          <p className="text-center text-xs text-neutral-500">
+            New customer?{" "}
+            <a
+              href={"/register?callbackUrl=" + encodeURIComponent(callbackUrl)}
+              className="font-semibold text-amber-700 hover:underline dark:text-amber-400"
+            >
+              Create an account
+            </a>
+          </p>
         </CardFooter>
       </form>
     </Card>
