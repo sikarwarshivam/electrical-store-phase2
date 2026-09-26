@@ -31,7 +31,12 @@ export const couponCreateSchema = z.object({
   isActive: z.enum(["on", "off"]).default("on"),
 });
 
+export const couponUpdateSchema = couponCreateSchema.extend({
+  couponId: z.string().regex(/^[a-fA-F0-9]{24}$/, "Invalid coupon identifier."),
+});
+
 export type CouponCreateInput = z.infer<typeof couponCreateSchema>;
+export type CouponUpdateInput = z.infer<typeof couponUpdateSchema>;
 
 export const couponIdSchema = z.object({
   couponId: z.string().regex(/^[a-fA-F0-9]{24}$/, "Invalid coupon identifier."),
