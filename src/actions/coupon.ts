@@ -163,7 +163,17 @@ export async function updateCouponAction(formData: FormData) {
   coupon.expiresAt = expiresAt;
   coupon.usageLimit = usageLimit;
   coupon.isActive = parsed.data.isActive === "on";
-  await coupon.save();
+
+  try {
+    await coupon.save();
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      errorRedirect("A coupon with this code already exists.");
+    }
+    errorRedirect(
+      error instanceof Error ? error.message : "Unable to update coupon."
+    );
+  }
 
   revalidatePath("/admin/coupons");
   revalidatePath("/");
