@@ -194,37 +194,6 @@ export function CheckoutPage() {
     setCouponError("");
   }
 
-  async function applyCoupon() {
-    const code = couponCode.trim().toUpperCase();
-    if (!code) {
-      setCouponError("Enter a coupon code.");
-      return;
-    }
-    if (!cartVerified) {
-      setCouponError("Please wait while your cart is verified.");
-      return;
-    }
-    setCouponLoading(true);
-    setCouponError("");
-    try {
-      const result = await validateCouponAction({ code, subtotalPaise });
-      if (!result.success) {
-        setAppliedCoupon(null);
-        setCouponError(result.error);
-        return;
-      }
-      setAppliedCoupon({ code: result.code, discountPaise: result.discountPaise });
-      setCouponCode(result.code);
-      setPaymentOrder(null);
-      setPaymentError("");
-    } catch {
-      setAppliedCoupon(null);
-      setCouponError("Unable to validate this coupon right now.");
-    } finally {
-      setCouponLoading(false);
-    }
-  }
-
   const signature = useMemo(
     () =>
       items
@@ -497,6 +466,37 @@ export function CheckoutPage() {
     address.state.trim().length >= 2;
 
   const continueDisabled = loading || !cartVerified || !addressComplete;
+
+  async function applyCoupon() {
+    const code = couponCode.trim().toUpperCase();
+    if (!code) {
+      setCouponError("Enter a coupon code.");
+      return;
+    }
+    if (!cartVerified) {
+      setCouponError("Please wait while your cart is verified.");
+      return;
+    }
+    setCouponLoading(true);
+    setCouponError("");
+    try {
+      const result = await validateCouponAction({ code, subtotalPaise });
+      if (!result.success) {
+        setAppliedCoupon(null);
+        setCouponError(result.error);
+        return;
+      }
+      setAppliedCoupon({ code: result.code, discountPaise: result.discountPaise });
+      setCouponCode(result.code);
+      setPaymentOrder(null);
+      setPaymentError("");
+    } catch {
+      setAppliedCoupon(null);
+      setCouponError("Unable to validate this coupon right now.");
+    } finally {
+      setCouponLoading(false);
+    }
+  }
 
   return (
     <PageContainer
