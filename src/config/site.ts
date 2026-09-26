@@ -32,6 +32,7 @@ export const siteConfig = {
     { title: "Categories", href: "/categories" },
     { title: "About Us", href: "/#about" },
     { title: "Contact", href: "/#contact" },
+    { title: "Campaigns", href: "/campaigns" },
   ],
 
   // Admin Navigation Links
@@ -45,6 +46,7 @@ export const siteConfig = {
     { title: "Customers", href: "/admin/customers", icon: "Users" },
     { title: "Coupons", href: "/admin/coupons", icon: "Tag" },
     { title: "Banners", href: "/admin/banners", icon: "Image" },
+    { title: "Campaigns", href: "/admin/campaigns", icon: "Megaphone" },
     { title: "Settings", href: "/admin/settings", icon: "Settings" },
   ],
 } as const;
