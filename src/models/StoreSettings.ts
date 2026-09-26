@@ -24,6 +24,10 @@ export interface IStoreSettings extends Document {
       maxOrderValuePaise: number;
       convenienceFeePaise: number;
     };
+    serviceability: {
+      selfDeliveryPincodes: string[];
+      courierPincodes: string[];
+    };
   };
   createdAt: Date;
   updatedAt: Date;
@@ -116,6 +120,18 @@ const StoreSettingsSchema = new Schema<IStoreSettings>(
           default: 0,
         },
       },
+      serviceability: {
+        selfDeliveryPincodes: {
+          type: [String],
+          required: true,
+          default: [],
+        },
+        courierPincodes: {
+          type: [String],
+          required: true,
+          default: [],
+        },
+      },
     },
   },
   { timestamps: true }
@@ -146,6 +162,10 @@ export const DEFAULT_STORE_SETTINGS = {
       minOrderValuePaise: 0,
       maxOrderValuePaise: 0,
       convenienceFeePaise: 0,
+    },
+    serviceability: {
+      selfDeliveryPincodes: [],
+      courierPincodes: [],
     },
   },
 };
