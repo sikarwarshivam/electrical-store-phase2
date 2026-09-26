@@ -409,6 +409,8 @@ export async function createPaymentOrderAction(
         subtotalPaise,
         shippingPaise,
         taxPaise,
+        discountPaise,
+        couponCode: appliedCouponCode,
         currency: "INR",
         reservationExpiresAt: expiresAt.toISOString(),
       };
