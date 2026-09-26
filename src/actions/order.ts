@@ -515,6 +515,7 @@ export async function verifyRazorpayPaymentAction(
     if (payment.status !== "captured") {
       if (payment.status === "failed") {
         await releaseOrderInventory(order._id.toString(), "Razorpay payment failed.");
+        if (order.pricing.couponCode) await releaseCouponUsage(order.pricing.couponCode);
         await Order.updateOne(
           { _id: order._id, status: "PAYMENT_PENDING" },
           {
