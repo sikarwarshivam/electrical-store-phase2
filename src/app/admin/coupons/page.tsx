@@ -34,7 +34,7 @@ function formatDateTimeLocal(value: Date) {
 export default async function AdminCouponsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string; error?: string }>;
+  searchParams: Promise<{ success?: string; error?: string; edit?: string }>;
 }) {
   const params = await searchParams;
   const { coupons, now } = await getAdminCoupons();
