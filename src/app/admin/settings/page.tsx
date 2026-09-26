@@ -366,16 +366,16 @@ export default async function AdminSettingsPage({
             <CardHeader>
               <CardTitle className="text-base">Order Cancellation</CardTitle>
               <CardDescription>
-                Configure the starting cancellation policy. This is stored now and
-                will be enforced when the customer cancellation/refund workflow is
-                connected.
+                Configure free cancellation and the fee for cancellation after
+                shipment has started.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
-                Starter configuration only: cancellation is allowed through
-                <strong> PACKED </strong> with no fee. Confirm the final policy with
-                the owner before launch.
+                Free cancellation is available through the selected early order
+                status. From SHIPPED through OUT_FOR_DELIVERY, the configured
+                cancellation fee can apply. Once the order is DELIVERED, it is
+                treated as a return/refund case instead of a cancellation.
               </div>
 
               <div className="flex items-center gap-3">
@@ -397,24 +397,23 @@ export default async function AdminSettingsPage({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label
-                    htmlFor="cancellation-through-status"
+                    htmlFor="free-cancellation-through-status"
                     className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
                   >
-                    Cancellation allowed through
+                    Free cancellation through
                   </label>
                   <select
-                    id="cancellation-through-status"
-                    name="cancellationThroughStatus"
-                    defaultValue={settings.delivery.cancellation.cancelableThroughStatus}
+                    id="free-cancellation-through-status"
+                    name="freeCancellationThroughStatus"
+                    defaultValue={
+                      settings.delivery.cancellation.freeCancellationThroughStatus
+                    }
                     className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
                   >
                     <option value="PLACED">Placed</option>
                     <option value="CONFIRMED">Confirmed</option>
                     <option value="PACKED">Packed</option>
                   </select>
-                  <p className="mt-1 text-xs text-neutral-500">
-                    SHIPPED and later states are outside this configurable cutoff.
-                  </p>
                 </div>
 
                 <div>
@@ -422,7 +421,7 @@ export default async function AdminSettingsPage({
                     htmlFor="cancellation-fee"
                     className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
                   >
-                    Cancellation fee (₹)
+                    Post-shipment cancellation fee (₹)
                   </label>
                   <input
                     id="cancellation-fee"
@@ -430,10 +429,21 @@ export default async function AdminSettingsPage({
                     type="text"
                     inputMode="decimal"
                     required
-                    defaultValue={rupees(settings.delivery.cancellation.feePaise)}
+                    defaultValue={rupees(
+                      settings.delivery.cancellation.feePaise
+                    )}
                     className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
                   />
                 </div>
+              </div>
+
+              <div className="rounded-md border border-neutral-200 p-4 text-xs text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
+                <p>
+                  <strong>Paid cancellation:</strong> SHIPPED → OUT_FOR_DELIVERY
+                </p>
+                <p className="mt-1">
+                  <strong>DELIVERED:</strong> use the returns/refunds workflow.
+                </p>
               </div>
             </CardContent>
           </Card>
