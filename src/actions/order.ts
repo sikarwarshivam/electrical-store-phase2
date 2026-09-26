@@ -168,6 +168,8 @@ export async function createPaymentOrderAction(
           subtotalPaise: existing.pricing.subtotalPaise,
           shippingPaise: existing.pricing.shippingPaise,
           taxPaise: existing.pricing.taxPaise,
+          discountPaise: existing.pricing.discountPaise,
+          couponCode: existing.pricing.couponCode,
           currency: "INR",
           reservationExpiresAt: existing.reservation.expiresAt.toISOString(),
         };
@@ -356,6 +358,7 @@ export async function createPaymentOrderAction(
         }
       );
 
+      if (appliedCouponCode) await releaseCouponUsage(appliedCouponCode);
       return {
         success: false,
         error:
@@ -537,6 +540,7 @@ export async function verifyRazorpayPaymentAction(
     }
 
     await consumeOrderReservation(order._id.toString(), "Razorpay payment captured.");
+    if (order.pricing.couponCode) await consumeCouponUsage(order.pricing.couponCode);
 
     await Order.updateOne(
       { _id: order._id, status: "PAYMENT_PENDING" },
