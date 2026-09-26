@@ -189,107 +189,111 @@ export default async function AdminSettingsPage({
                 </div>
               </div>
 
+              <div className="border-t border-neutral-200 pt-6 dark:border-neutral-800">
+                <div className="mb-4">
+                  <h3 className="text-base font-semibold">Cash on Delivery (COD)</h3>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    COD is disabled by default. The owner can enable it later and
+                    configure the order-value limits and convenience fee here.
+                  </p>
+                </div>
+            <CardDescription>
+                              COD is disabled by default. The owner can enable it later and
+                              configure the order-value limits and convenience fee here.
+                            </CardDescription>
+                            <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+                              Enabling COD here only stores the business rule. Checkout support,
+                              pincode serviceability, and the COD refund workflow will be connected
+                              after the final client policy is confirmed.
+                            </div>
+                
+                            <div className="space-y-5">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  id="cod-enabled"
+                                  name="codEnabled"
+                                  type="checkbox"
+                                  defaultChecked={settings.delivery.cod.enabled}
+                                  form="delivery-settings-form"
+                                  className="h-4 w-4 rounded border-neutral-300"
+                                />
+                                <label
+                                  htmlFor="cod-enabled"
+                                  className="text-sm font-medium text-neutral-800 dark:text-neutral-200"
+                                >
+                                  Enable COD
+                                </label>
+                              </div>
+                
+                              <div className="grid gap-4 sm:grid-cols-3">
+                                <div>
+                                  <label
+                                    htmlFor="cod-min-order-value"
+                                    className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+                                  >
+                                    Minimum order value (₹)
+                                  </label>
+                                  <input
+                                    id="cod-min-order-value"
+                                    name="codMinOrderValue"
+                                    type="text"
+                                    inputMode="decimal"
+                                    required
+                                    defaultValue={rupees(settings.delivery.cod.minOrderValuePaise)}
+                                    form="delivery-settings-form"
+                                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                  />
+                                </div>
+                
+                                <div>
+                                  <label
+                                    htmlFor="cod-max-order-value"
+                                    className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+                                  >
+                                    Maximum order value (₹)
+                                  </label>
+                                  <input
+                                    id="cod-max-order-value"
+                                    name="codMaxOrderValue"
+                                    type="text"
+                                    inputMode="decimal"
+                                    required
+                                    defaultValue={rupees(settings.delivery.cod.maxOrderValuePaise)}
+                                    form="delivery-settings-form"
+                                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                  />
+                                </div>
+                
+                                <div>
+                                  <label
+                                    htmlFor="cod-convenience-fee"
+                                    className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+                                  >
+                                    COD convenience fee (₹)
+                                  </label>
+                                  <input
+                                    id="cod-convenience-fee"
+                                    name="codConvenienceFee"
+                                    type="text"
+                                    inputMode="decimal"
+                                    required
+                                    defaultValue={rupees(settings.delivery.cod.convenienceFeePaise)}
+                                    form="delivery-settings-form"
+                                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                
+                
+              </div>
+
               <Button type="submit">Save delivery settings</Button>
             </form>
           </CardContent>
         </Card>
 
                 <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Cash on Delivery (COD)</CardTitle>
-            <CardDescription>
-              COD is disabled by default. The owner can enable it later and
-              configure the order-value limits and convenience fee here.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
-              Enabling COD here only stores the business rule. Checkout support,
-              pincode serviceability, and the COD refund workflow will be connected
-              after the final client policy is confirmed.
-            </div>
-
-            <div className="space-y-5">
-              <div className="flex items-center gap-3">
-                <input
-                  id="cod-enabled"
-                  name="codEnabled"
-                  type="checkbox"
-                  defaultChecked={settings.delivery.cod.enabled}
-                  form="delivery-settings-form"
-                  className="h-4 w-4 rounded border-neutral-300"
-                />
-                <label
-                  htmlFor="cod-enabled"
-                  className="text-sm font-medium text-neutral-800 dark:text-neutral-200"
-                >
-                  Enable COD
-                </label>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <label
-                    htmlFor="cod-min-order-value"
-                    className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
-                  >
-                    Minimum order value (₹)
-                  </label>
-                  <input
-                    id="cod-min-order-value"
-                    name="codMinOrderValue"
-                    type="text"
-                    inputMode="decimal"
-                    required
-                    defaultValue={rupees(settings.delivery.cod.minOrderValuePaise)}
-                    form="delivery-settings-form"
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="cod-max-order-value"
-                    className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
-                  >
-                    Maximum order value (₹)
-                  </label>
-                  <input
-                    id="cod-max-order-value"
-                    name="codMaxOrderValue"
-                    type="text"
-                    inputMode="decimal"
-                    required
-                    defaultValue={rupees(settings.delivery.cod.maxOrderValuePaise)}
-                    form="delivery-settings-form"
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="cod-convenience-fee"
-                    className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
-                  >
-                    COD convenience fee (₹)
-                  </label>
-                  <input
-                    id="cod-convenience-fee"
-                    name="codConvenienceFee"
-                    type="text"
-                    inputMode="decimal"
-                    required
-                    defaultValue={rupees(settings.delivery.cod.convenienceFeePaise)}
-                    form="delivery-settings-form"
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
           <CardHeader>
             <CardTitle className="text-base">GST / Invoicing</CardTitle>
             <CardDescription>
