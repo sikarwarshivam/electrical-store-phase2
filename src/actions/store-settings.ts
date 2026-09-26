@@ -49,9 +49,23 @@ export async function getStoreSettings() {
   const serviceability =
     settings.delivery.serviceability ??
     DEFAULT_STORE_SETTINGS.delivery.serviceability;
-  const cancellation =
-    settings.delivery.cancellation ??
-    DEFAULT_STORE_SETTINGS.delivery.cancellation;
+  const cancellation = settings.delivery.cancellation
+    ? {
+        enabled: settings.delivery.cancellation.enabled,
+        freeCancellationThroughStatus:
+          settings.delivery.cancellation.freeCancellationThroughStatus ??
+          DEFAULT_STORE_SETTINGS.delivery.cancellation.freeCancellationThroughStatus,
+        paidCancellationFromStatus:
+          settings.delivery.cancellation.paidCancellationFromStatus ??
+          DEFAULT_STORE_SETTINGS.delivery.cancellation.paidCancellationFromStatus,
+        paidCancellationThroughStatus:
+          settings.delivery.cancellation.paidCancellationThroughStatus ??
+          DEFAULT_STORE_SETTINGS.delivery.cancellation.paidCancellationThroughStatus,
+        feePaise:
+          settings.delivery.cancellation.feePaise ??
+          DEFAULT_STORE_SETTINGS.delivery.cancellation.feePaise,
+      }
+    : DEFAULT_STORE_SETTINGS.delivery.cancellation;
 
   return {
     key: "default" as const,
@@ -82,7 +96,12 @@ export async function getStoreSettings() {
       },
       cancellation: {
         enabled: cancellation.enabled,
-        cancelableThroughStatus: cancellation.cancelableThroughStatus,
+        freeCancellationThroughStatus:
+          cancellation.freeCancellationThroughStatus,
+        paidCancellationFromStatus:
+          cancellation.paidCancellationFromStatus,
+        paidCancellationThroughStatus:
+          cancellation.paidCancellationThroughStatus,
         feePaise: cancellation.feePaise,
       },
     },
@@ -109,10 +128,8 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
     courierPincodes: value(formData, "courierPincodes"),
     cancellationEnabled:
       formData.get("cancellationEnabled") === "off" ? "off" : "on",
-    cancellationThroughStatus: value(
-      formData,
-      "cancellationThroughStatus"
-    ) || "PACKED",
+    freeCancellationThroughStatus:
+      value(formData, "freeCancellationThroughStatus") || "PACKED",
     cancellationFee: value(formData, "cancellationFee"),
   });
 
@@ -196,7 +213,10 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
             },
             cancellation: {
               enabled: parsed.data.cancellationEnabled === "on",
-              cancelableThroughStatus: parsed.data.cancellationThroughStatus,
+              freeCancellationThroughStatus:
+                parsed.data.freeCancellationThroughStatus,
+              paidCancellationFromStatus: "SHIPPED",
+              paidCancellationThroughStatus: "OUT_FOR_DELIVERY",
               feePaise: cancellationFeePaise,
             },
           },
