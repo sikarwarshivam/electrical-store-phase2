@@ -195,7 +195,7 @@ export async function updateCampaignAction(formData: FormData) {
   try {
     await connectToDatabase();
     const input = await parseCampaignInput(formData, true);
-    const campaign = await Campaign.findById(input.campaignId);
+    const campaign = await Campaign.findById(campaignId);
 
     if (!campaign) {
       throw new Error("Campaign not found.");
