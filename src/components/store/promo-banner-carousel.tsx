@@ -13,42 +13,26 @@ interface PromoBannerCarouselProps {
 const ROTATION_MS = 5000;
 const SWIPE_THRESHOLD_PX = 48;
 
-function BannerContent({
-  banner,
-  priority,
-}: {
-  banner: PublicBanner;
-  priority: boolean;
-}) {
+function BannerContent({ banner }: { banner: PublicBanner }) {
   const content = (
-    <div className="group relative aspect-[16/6] min-h-44 w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+    <div className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
       <img
         src={banner.imageUrl}
         alt={banner.title}
-        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
-        loading={priority ? "eager" : "lazy"}
+        className="block aspect-[16/6] h-auto w-full object-contain"
+        loading="lazy"
         decoding="async"
       />
-      <div className="absolute inset-0 bg-linear-to-r from-black/65 via-black/10 to-transparent" />
-      <div className="absolute inset-y-0 left-0 flex w-full max-w-2xl flex-col justify-center px-5 py-6 sm:px-8">
-        <h2 className="max-w-xl text-xl font-extrabold tracking-tight text-white drop-shadow-sm sm:text-3xl">
-          {banner.title}
-        </h2>
-        {banner.subtitle ? (
-          <p className="mt-1.5 max-w-lg text-xs leading-5 text-white/90 drop-shadow-sm sm:text-sm">
-            {banner.subtitle}
-          </p>
-        ) : null}
-        <span className="mt-4 inline-flex w-fit rounded-md bg-white px-3 py-1.5 text-xs font-bold text-neutral-900 shadow-sm">
-          Shop now
-        </span>
-      </div>
     </div>
   );
 
   if (banner.linkUrl.startsWith("/")) {
     return (
-      <Link href={banner.linkUrl} className="block">
+      <Link
+        href={banner.linkUrl}
+        className="block rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+        aria-label={banner.title}
+      >
         {content}
       </Link>
     );
@@ -59,7 +43,8 @@ function BannerContent({
       href={banner.linkUrl}
       target="_blank"
       rel="noreferrer"
-      className="block"
+      className="block rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+      aria-label={banner.title}
     >
       {content}
     </a>
@@ -70,7 +55,7 @@ export function PromoBannerCarousel({
   banners,
 }: PromoBannerCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
   const hasMultiple = banners.length > 1;
@@ -82,14 +67,14 @@ export function PromoBannerCarousel({
   }, [banners.length]);
 
   useEffect(() => {
-    if (!hasMultiple || isPaused) return;
+    if (!hasMultiple || isFocused) return;
 
     const timer = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % banners.length);
     }, ROTATION_MS);
 
     return () => window.clearInterval(timer);
-  }, [banners.length, hasMultiple, isPaused]);
+  }, [banners.length, hasMultiple, isFocused]);
 
   if (banners.length === 0) return null;
 
@@ -107,7 +92,6 @@ export function PromoBannerCarousel({
 
   function handleTouchStart(event: TouchEvent) {
     touchStartX.current = event.changedTouches[0]?.clientX ?? null;
-    setIsPaused(true);
   }
 
   function handleTouchEnd(event: TouchEvent) {
@@ -116,10 +100,7 @@ export function PromoBannerCarousel({
 
     touchStartX.current = null;
 
-    if (startX === null || endX === null || !hasMultiple) {
-      setIsPaused(false);
-      return;
-    }
+    if (startX === null || endX === null || !hasMultiple) return;
 
     const deltaX = startX - endX;
 
@@ -130,8 +111,6 @@ export function PromoBannerCarousel({
         goPrevious();
       }
     }
-
-    setIsPaused(false);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
@@ -140,17 +119,13 @@ export function PromoBannerCarousel({
     if (event.key === "ArrowRight") {
       event.preventDefault();
       goNext();
-      setIsPaused(true);
     }
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
       goPrevious();
-      setIsPaused(true);
     }
   }
-
-  const banner = banners[activeIndex];
 
   return (
     <section
@@ -158,38 +133,34 @@ export function PromoBannerCarousel({
       aria-roledescription="carousel"
       tabIndex={hasMultiple ? 0 : undefined}
       onKeyDown={handleKeyDown}
-      onMouseEnter={() => hasMultiple && setIsPaused(true)}
-      onMouseLeave={() => hasMultiple && setIsPaused(false)}
-      onFocus={() => hasMultiple && setIsPaused(true)}
+      onFocus={() => hasMultiple && setIsFocused(true)}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-          setIsPaused(false);
+          setIsFocused(false);
         }
       }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className="border-b border-neutral-200 bg-neutral-50 py-5 dark:border-neutral-800 dark:bg-neutral-900/30"
+      className="border-b border-neutral-200 bg-neutral-50 py-4 dark:border-neutral-800 dark:bg-neutral-900/30"
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="relative">
-          <div className="overflow-hidden rounded-xl">
-            <div
-              className="flex transition-transform duration-500 ease-out motion-reduce:transition-none"
-              style={{ transform: `translateX(-${activeIndex * 100}%)` }}
-              aria-live={isPaused ? "polite" : "off"}
-            >
-              {banners.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="w-full shrink-0"
-                  role="group"
-                  aria-roledescription="slide"
-                  aria-label={`${index + 1} of ${banners.length}`}
-                >
-                  <BannerContent banner={item} priority={index === 0} />
-                </div>
-              ))}
-            </div>
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <div className="relative overflow-hidden rounded-xl">
+          <div
+            className="flex transition-transform duration-500 ease-out motion-reduce:transition-none"
+            style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+            aria-live={isFocused ? "polite" : "off"}
+          >
+            {banners.map((item, index) => (
+              <div
+                key={item.id}
+                className="w-full shrink-0"
+                role="group"
+                aria-roledescription="slide"
+                aria-label={`${index + 1} of ${banners.length}`}
+              >
+                <BannerContent banner={item} />
+              </div>
+            ))}
           </div>
 
           {hasMultiple ? (
@@ -198,25 +169,25 @@ export function PromoBannerCarousel({
                 type="button"
                 aria-label="Previous banner"
                 onClick={goPrevious}
-                className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-black/45 text-white shadow-sm backdrop-blur-sm transition hover:bg-black/65 focus:outline-none focus:ring-2 focus:ring-white sm:left-4"
+                className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-black/35 text-white shadow-sm backdrop-blur-sm transition hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-white sm:left-3"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
                 aria-label="Next banner"
                 onClick={goNext}
-                className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-black/45 text-white shadow-sm backdrop-blur-sm transition hover:bg-black/65 focus:outline-none focus:ring-2 focus:ring-white sm:right-4"
+                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-black/35 text-white shadow-sm backdrop-blur-sm transition hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-white sm:right-3"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-4 w-4" />
               </button>
             </>
           ) : null}
         </div>
 
         {hasMultiple ? (
-          <div className="mt-3 flex items-center justify-center gap-1.5">
+          <div className="mt-2 flex items-center justify-center gap-1.5">
             {banners.map((item, index) => (
               <button
                 key={item.id}
