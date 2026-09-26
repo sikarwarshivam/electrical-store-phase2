@@ -24,12 +24,12 @@ export function ProductCard({ product }: { product: PublicProductCard }) {
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-950">
       <Link href={"/products/" + product.slug} className="block">
-        <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-900">
+        <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-900">
           {primaryImage ? (
 <img
               src={primaryImage}
               alt={product.images.find((image) => image.url === primaryImage)?.alt || product.name}
-              className="h-full w-full object-contain p-5 transition-transform duration-300 group-hover:scale-105"
+              className="h-full w-full object-contain p-4 transition-transform duration-300 group-hover:scale-[1.03]"
               loading="lazy"
               decoding="async"
             />
@@ -52,7 +52,7 @@ export function ProductCard({ product }: { product: PublicProductCard }) {
         </div>
       </Link>
 
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-3.5">
         <div className="mb-2 flex items-center gap-2 text-[11px] font-medium text-neutral-500">
           <span>{product.category.name}</span>
           {product.brand ? <span>· {product.brand.name}</span> : null}
@@ -65,14 +65,14 @@ export function ProductCard({ product }: { product: PublicProductCard }) {
         </Link>
 
         {product.shortDescription ? (
-          <p className="mt-2 line-clamp-2 text-xs leading-5 text-neutral-500">
+          <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-neutral-500">
             {product.shortDescription}
           </p>
         ) : null}
 
-        <div className="mt-auto pt-4">
+        <div className="mt-auto pt-3">
           <div className="flex items-end gap-2">
-            <span className="text-lg font-bold text-neutral-950 dark:text-white">
+            <span className="text-base font-bold text-neutral-950 dark:text-white">
               {product.isVariable ? "From " : ""}
               {formatINRFromPaise(product.pricePaise)}
             </span>
