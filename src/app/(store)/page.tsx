@@ -105,23 +105,45 @@ export default async function HomePage() {
               </div>
 
               {categories.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3">
-                  {categories.slice(0, 4).map((category) => (
-                    <Link
-                      key={category.id}
-                      href={"/categories/" + category.slug}
-                      className="group overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 transition hover:border-amber-300 hover:bg-amber-50 dark:border-neutral-800 dark:bg-neutral-900/60 dark:hover:border-amber-700 dark:hover:bg-amber-950/20"
-                    >
-                      <div className="relative aspect-[16/9] overflow-hidden bg-neutral-100 dark:bg-neutral-900">
-                        {category.imageUrl ? (
-                          <img
-                            src={category.imageUrl}
-                            alt={category.name}
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            loading="eager"
-                            decoding="async"
-                          />
-                        ) : (
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {categories.slice(0, 8).map((category) => (
+                <Link
+                  key={category.id}
+                  href={"/categories/" + category.slug}
+                  className="group w-48 shrink-0 overflow-hidden rounded-xl border border-neutral-200 bg-white transition hover:border-amber-300 hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-950"
+                >
+                  <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-900">
+                    {category.imageUrl ? (
+                      <img
+                        src={category.imageUrl}
+                        alt={category.name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-neutral-400">
+                        <FolderTree className="h-8 w-8" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 px-3 py-2.5">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-semibold text-neutral-900 group-hover:text-amber-700 dark:text-white dark:group-hover:text-amber-400">
+                        {category.name}
+                      </h3>
+                      <p className="mt-0.5 text-[11px] text-neutral-500">
+                        {category.children.length}{" "}
+                        {category.children.length === 1
+                          ? "subcategory"
+                          : "subcategories"}
+                      </p>
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-hover:translate-x-0.5 group-hover:text-amber-600" />
+                  </div>
+                </Link>
+              ))}
+            </div>          ) : (
                           <div className="flex h-full items-center justify-center text-neutral-400">
                             <FolderTree className="h-7 w-7" />
                           </div>
@@ -148,7 +170,7 @@ export default async function HomePage() {
 
       <PromoBannerCarousel banners={banners} />
 
-      <section id="categories" className="py-12">
+      <section id="categories" className="py-8 sm:py-10">
         <PageContainer
           title="Shop by category"
           description="Start with a broad product group, then narrow down to a subcategory."
@@ -200,7 +222,7 @@ export default async function HomePage() {
         </PageContainer>
       </section>
 
-      <section id="products" className="border-y border-neutral-200 bg-neutral-50 py-12 dark:border-neutral-800 dark:bg-neutral-900/30">
+      <section id="products" className="border-y border-neutral-200 bg-neutral-50 py-8 dark:border-neutral-800 dark:bg-neutral-900/30 sm:py-10">
         <PageContainer
           title="Latest products"
           description="Published products are pulled from the live catalog and inventory records."
@@ -237,7 +259,7 @@ export default async function HomePage() {
         </PageContainer>
       </section>
 
-      <section className="py-12">
+      <section className="py-8 sm:py-10">
         <PageContainer
           title="Find the right electrical specification"
           description="The catalog is designed around SKU-level data rather than generic product names alone."
@@ -280,19 +302,36 @@ export default async function HomePage() {
         </PageContainer>
       </section>
 
-      <section id="about" className="border-t border-neutral-200 bg-white py-12 dark:border-neutral-800 dark:bg-neutral-950">
+      <section id="about" className="border-t border-neutral-200 bg-white py-8 dark:border-neutral-800 dark:bg-neutral-950 sm:py-10">
         <PageContainer title="About the store" description="Store information can be finalized from the central site configuration.">
-          <div className="max-w-3xl text-sm leading-7 text-neutral-600 dark:text-neutral-300">
-            <p>
-              {siteConfig.name} is being built as a focused electrical catalog and commerce experience for
-              retail customers, electricians, contractors, and project buyers. Product content, specifications,
-              pricing, and availability are maintained through the admin catalog.
-            </p>
-          </div>
-        </PageContainer>
+          <div className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
+            <div className="max-w-3xl text-sm leading-7 text-neutral-600 dark:text-neutral-300">
+              <p>
+                {siteConfig.name} is being built as a focused electrical catalog
+                and commerce experience for retail customers, electricians,
+                contractors, and project buyers. Product content,
+                specifications, pricing, and availability are maintained
+                through the admin catalog.
+              </p>
+            </div>
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/40">
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                Store information
+              </p>
+              <p className="mt-2 text-sm font-medium text-neutral-900 dark:text-white">
+                {siteConfig.contact.email}
+              </p>
+              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
+                {siteConfig.contact.phone}
+              </p>
+              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
+                {siteConfig.contact.address}
+              </p>
+            </div>
+          </div>     </PageContainer>
       </section>
 
-      <section id="contact" className="border-t border-neutral-200 py-12 dark:border-neutral-800">
+      <section id="contact" className="border-t border-neutral-200 py-8 dark:border-neutral-800 sm:py-10">
         <PageContainer title="Contact" description="Client contact details are configured centrally and will be replaced with the shop's approved information.">
           <div className="grid gap-4 sm:grid-cols-3">
             <Card>
