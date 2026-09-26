@@ -476,3 +476,74 @@ export async function getAdminSalesStats() {
     pendingOrders,
   };
 }
+
+export type CouponApplyResult =
+  | { success: true; code: string; discountPaise: number; discountType: "PERCENTAGE" | "FLAT"; discountValue: number }
+  | { success: false; error: string };
+
+export async function calculateCouponDiscount(code: string, subtotalPaise: number): Promise<CouponApplyResult> {
+  const normalizedCode = code.trim().toUpperCase();
+  if (!normalizedCode) return { success: false, error: "Enter a coupon code." };
+  if (!Number.isSafeInteger(subtotalPaise) || subtotalPaise < 0) {
+    return { success: false, error: "Invalid order subtotal." };
+  }
+
+  const { Coupon } = await import("@/models/Coupon");
+  const now = new Date();
+  const coupon = await Coupon.findOne({
+    code: normalizedCode,
+    isActive: true,
+    startsAt: { $lte: now },
+    expiresAt: { $gt: now },
+  }).lean();
+
+  if (!coupon) return { success: false, error: "This coupon is invalid or expired." };
+  if (coupon.usageLimit > 0 && coupon.usedCount + coupon.reservedCount >= coupon.usageLimit) {
+    return { success: false, error: "This coupon has reached its usage limit." };
+  }
+  if (subtotalPaise < coupon.minOrderValuePaise) {
+    return { success: false, error: "This coupon requires a higher order value." };
+  }
+
+  const discountPaise = coupon.discountType === "PERCENTAGE"
+    ? Math.min(subtotalPaise, Math.floor((subtotalPaise * coupon.discountValue) / 100))
+    : Math.min(subtotalPaise, coupon.discountValue);
+
+  if (discountPaise <= 0) return { success: false, error: "This coupon does not apply to this order." };
+  return { success: true, code: coupon.code, discountPaise, discountType: coupon.discountType, discountValue: coupon.discountValue };
+}
+
+export async function reserveCouponUsage(code: string) {
+  const { Coupon } = await import("@/models/Coupon");
+  const coupon = await Coupon.findOneAndUpdate(
+    {
+      code: code.trim().toUpperCase(),
+      isActive: true,
+      startsAt: { $lte: new Date() },
+      expiresAt: { $gt: new Date() },
+      $expr: { $or: [
+        { $eq: ["$usageLimit", 0] },
+        { $lt: [{ $add: ["$usedCount", "$reservedCount"] }, "$usageLimit"] },
+      ] },
+    },
+    { $inc: { reservedCount: 1 } },
+    { returnDocument: "after" }
+  );
+  return Boolean(coupon);
+}
+
+export async function consumeCouponUsage(code: string) {
+  const { Coupon } = await import("@/models/Coupon");
+  await Coupon.updateOne(
+    { code: code.trim().toUpperCase(), reservedCount: { $gt: 0 } },
+    { $inc: { reservedCount: -1, usedCount: 1 } }
+  );
+}
+
+export async function releaseCouponUsage(code: string) {
+  const { Coupon } = await import("@/models/Coupon");
+  await Coupon.updateOne(
+    { code: code.trim().toUpperCase(), reservedCount: { $gt: 0 } },
+    { $inc: { reservedCount: -1 } }
+  );
+}
