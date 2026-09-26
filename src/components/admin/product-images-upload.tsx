@@ -53,6 +53,8 @@ export function ProductImagesUpload({
 
     const signatureResponse = await fetch("/api/admin/cloudinary-signature", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ folder: "products" }),
     });
     const signatureData = await signatureResponse.json();
 
@@ -66,7 +68,7 @@ export function ProductImagesUpload({
     uploadForm.append("file", file);
     uploadForm.append("api_key", signatureData.apiKey);
     uploadForm.append("timestamp", String(signatureData.timestamp));
-    uploadForm.append("folder", "electrical-store/products");
+    uploadForm.append("folder", signatureData.folder);
     uploadForm.append(
       "signature",
       signatureData.signature
