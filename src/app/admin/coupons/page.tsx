@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,6 @@ import {
   deleteCouponAction,
   getAdminCoupons,
   toggleCouponAction,
-  updateCouponAction,
 } from "@/actions/coupon";
 import { formatINRFromPaise } from "@/lib/money";
 
@@ -25,16 +23,10 @@ function formatDate(value: Date) {
   });
 }
 
-function formatDateTimeLocal(value: Date) {
-  const date = new Date(value);
-  const pad = (part: number) => String(part).padStart(2, "0");
-  return date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate()) + "T" + pad(date.getHours()) + ":" + pad(date.getMinutes());
-}
-
 export default async function AdminCouponsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string; error?: string; edit?: string }>;
+  searchParams: Promise<{ success?: string; error?: string }>;
 }) {
   const params = await searchParams;
   const { coupons, now } = await getAdminCoupons();
@@ -51,75 +43,6 @@ export default async function AdminCouponsPage({
       }
     >
       <CatalogMessage success={params.success} error={params.error} />
-
-      {params.edit ? (() => {
-        const coupon = coupons.find((item) => String(item._id) === params.edit);
-        if (!coupon) return null;
-        const used = coupon.usedCount > 0;
-        return (
-          <Card className="mb-6 border-amber-200 dark:border-amber-900/60">
-            <CardHeader>
-              <CardTitle className="text-base">Edit {coupon.code}</CardTitle>
-              <CardDescription>
-                Update this offer without creating a duplicate campaign.
-                {used ? " This coupon has been used, so its code cannot be changed." : ""}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form action={updateCouponAction} className="grid gap-4 md:grid-cols-2">
-                <input type="hidden" name="couponId" value={String(coupon._id)} />
-                <div>
-                  <label className="text-xs font-semibold">Coupon code</label>
-                  <input name="code" required maxLength={40} defaultValue={coupon.code} readOnly={used}
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm uppercase dark:border-neutral-700 dark:bg-neutral-900" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold">Discount type</label>
-                  <select name="discountType" defaultValue={coupon.discountType}
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900">
-                    <option value="PERCENTAGE">Percentage (%)</option>
-                    <option value="FLAT">Flat (₹)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold">Discount value</label>
-                  <input name="discountValue" required inputMode="decimal"
-                    defaultValue={coupon.discountType === "FLAT" ? (coupon.discountValue / 100).toFixed(2) : coupon.discountValue}
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold">Minimum order value (₹)</label>
-                  <input name="minOrderValue" required inputMode="decimal" defaultValue={(coupon.minOrderValuePaise / 100).toFixed(2)}
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold">Starts</label>
-                  <input name="startsAt" type="datetime-local" required defaultValue={formatDateTimeLocal(coupon.startsAt)}
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold">Expires</label>
-                  <input name="expiresAt" type="datetime-local" required defaultValue={formatDateTimeLocal(coupon.expiresAt)}
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold">Usage limit</label>
-                  <input name="usageLimit" required inputMode="numeric" defaultValue={coupon.usageLimit}
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
-                </div>
-                <label className="flex items-center gap-2 self-end text-sm">
-                  <input name="isActive" type="checkbox" defaultChecked={coupon.isActive} />
-                  Active
-                </label>
-                <div className="flex gap-2 md:col-span-2">
-                  <Button type="submit">Save changes</Button>
-                  <Link href="/admin/coupons" className="inline-flex h-10 items-center rounded-md border border-neutral-300 px-4 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900">Cancel</Link>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        );
-      })()}
 
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
         <Card>
@@ -301,10 +224,6 @@ export default async function AdminCouponsPage({
                       </div>
 
                       <div className="flex shrink-0 gap-2">
-                        <Link href={"/admin/coupons?edit=" + String(coupon._id)}
-                          className="inline-flex h-9 items-center rounded-md border border-neutral-300 px-3 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900">
-                          Edit
-                        </Link>
                         <form action={toggleCouponAction}>
                           <input type="hidden" name="couponId" value={String(coupon._id)} />
                           <Button type="submit" variant="outline">
