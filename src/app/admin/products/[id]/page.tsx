@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { CatalogMessage } from "@/components/admin/catalog-message";
 import { FieldLabel } from "@/components/admin/field-label";
 import { FocusCreatedVariant } from "@/components/admin/focus-created-variant";
+import { ProductImagesUpload } from "@/components/admin/product-images-upload";
+import { CloudinaryImageUpload } from "@/components/admin/cloudinary-image-upload";
 import {
   adjustInventoryAction,
   archiveVariantAction,
@@ -313,15 +315,13 @@ export default async function AdminProductDetailPage({
                 />
               </div>
 
-              <div>
-                <FieldLabel htmlFor="detail-images">Images JSON</FieldLabel>
-                <textarea
-                  id="detail-images"
-                  name="imagesJson"
-                  rows={8}
-                  defaultValue={safeJson(product.images)}
-                  className="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 font-mono text-xs dark:border-neutral-700 dark:bg-neutral-900"
-                />
+              <div className="md:col-span-2">
+                <FieldLabel hint="Upload product photos directly. Use the primary image for the main catalog card.">
+                  Product images
+                </FieldLabel>
+                <div className="mt-1.5">
+                  <ProductImagesUpload initialImages={product.images} />
+                </div>
               </div>
 
               <div className="md:col-span-2">
