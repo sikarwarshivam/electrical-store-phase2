@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { ArrowLeft, Image } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { PageContainer } from "@/components/layout/page-container";
 import { CatalogMessage } from "@/components/admin/catalog-message";
 import { Button } from "@/components/ui/button";
+import { BannerImageUpload } from "@/components/admin/banner-image-upload";
 import { getAdminBanner, updateBannerAction } from "@/actions/banner";
 import { notFound } from "next/navigation";
 
@@ -89,26 +96,25 @@ export default async function EditBannerPage({
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-semibold">Banner image URL</label>
-                <input
-                  name="imageUrl"
-                  type="url"
-                  required
-                  defaultValue={banner.imageUrl}
-                  className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                />
+            <div>
+              <label className="text-xs font-semibold">Banner image</label>
+              <div className="mt-1.5">
+                <BannerImageUpload initialUrl={banner.imageUrl} />
               </div>
-              <div>
-                <label className="text-xs font-semibold">Click destination</label>
-                <input
-                  name="linkUrl"
-                  required
-                  defaultValue={banner.linkUrl}
-                  className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                />
-              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold">Click destination</label>
+              <input
+                name="linkUrl"
+                required
+                defaultValue={banner.linkUrl}
+                placeholder="/products"
+                className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+              />
+              <p className="mt-1 text-xs text-neutral-500">
+                Example: /products or /categories/lighting
+              </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -142,6 +148,9 @@ export default async function EditBannerPage({
                 defaultValue={String(banner.sortOrder)}
                 className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
               />
+              <p className="mt-1 text-xs text-neutral-500">
+                Lower numbers appear first.
+              </p>
             </div>
 
             <label className="flex items-center gap-2 text-sm">
