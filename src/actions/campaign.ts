@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-utils";
 import { connectToDatabase } from "@/lib/db";
 import { slugify } from "@/lib/slug";
+import { Brand } from "@/models/Brand";
+import { Category } from "@/models/Category";
 import { Inventory } from "@/models/Inventory";
 import { Product } from "@/models/Product";
 import { ProductVariant } from "@/models/ProductVariant";
