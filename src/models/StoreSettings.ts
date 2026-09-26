@@ -18,6 +18,12 @@ export interface IStoreSettings extends Document {
       pricingMode: "MANUAL_CONFIGURATION";
       flatFeePaise: number;
     };
+    cod: {
+      enabled: boolean;
+      minOrderValuePaise: number;
+      maxOrderValuePaise: number;
+      convenienceFeePaise: number;
+    };
   };
   createdAt: Date;
   updatedAt: Date;
@@ -86,6 +92,30 @@ const StoreSettingsSchema = new Schema<IStoreSettings>(
           default: 10000,
         },
       },
+      cod: {
+        enabled: { type: Boolean, required: true, default: false },
+        minOrderValuePaise: {
+          type: Number,
+          required: true,
+          min: 0,
+          max: Number.MAX_SAFE_INTEGER,
+          default: 0,
+        },
+        maxOrderValuePaise: {
+          type: Number,
+          required: true,
+          min: 0,
+          max: Number.MAX_SAFE_INTEGER,
+          default: 0,
+        },
+        convenienceFeePaise: {
+          type: Number,
+          required: true,
+          min: 0,
+          max: Number.MAX_SAFE_INTEGER,
+          default: 0,
+        },
+      },
     },
   },
   { timestamps: true }
@@ -110,6 +140,12 @@ export const DEFAULT_STORE_SETTINGS = {
     courier: {
       pricingMode: "MANUAL_CONFIGURATION" as const,
       flatFeePaise: 10000,
+    },
+    cod: {
+      enabled: false,
+      minOrderValuePaise: 0,
+      maxOrderValuePaise: 0,
+      convenienceFeePaise: 0,
     },
   },
 };
