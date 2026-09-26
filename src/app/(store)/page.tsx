@@ -1,22 +1,19 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import { ArrowRight, FolderTree, Search, ShieldCheck, SlidersHorizontal, Tag } from "lucide-react";
+import { ArrowRight, FolderTree, Search, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { siteConfig } from "@/config/site";
 import { PageContainer } from "@/components/layout/page-container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/store/product-card";
 import { getPublicCategories, getPublicProducts } from "@/lib/catalog";
-import { getAvailableCoupons } from "@/actions/coupon";
-import { formatINRFromPaise } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [categories, catalog, offers] = await Promise.all([
+  const [categories, catalog] = await Promise.all([
     getPublicCategories(),
     getPublicProducts({ page: 1, pageSize: 8, sort: "newest" }),
-    getAvailableCoupons(),
   ]);
 
   return (
@@ -52,31 +49,6 @@ export default async function HomePage() {
           </div>
         </PageContainer>
       </section>
-
-      {offers.length > 0 ? (
-        <section className="border-b border-neutral-200 bg-white py-5 dark:border-neutral-800 dark:bg-neutral-950">
-          <PageContainer>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <Tag className="h-4 w-4 text-amber-600" />
-                <div>
-                  <p className="text-sm font-semibold">Current offers</p>
-                  <p className="text-xs text-neutral-500">Save on your next order with an available coupon.</p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {offers.slice(0, 3).map((offer) => (
-                  <Link key={offer.code} href="/checkout"
-                    className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold transition-colors hover:border-amber-400 hover:bg-amber-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-amber-950/30">
-                    <span>{offer.discountType === "PERCENTAGE" ? offer.discountValue + "% off" : formatINRFromPaise(offer.discountValue) + " off"}</span>
-                    <span className="font-mono text-[10px] text-neutral-500">{offer.code}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </PageContainer>
-        </section>
-      ) : null}
 
       <section id="categories" className="py-12">
         <PageContainer
