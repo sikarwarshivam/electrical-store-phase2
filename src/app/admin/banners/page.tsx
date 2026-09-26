@@ -1,6 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import { Image, Pencil, Tag } from "lucide-react";
+import { Image, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { PageContainer } from "@/components/layout/page-container";
 import { CatalogMessage } from "@/components/admin/catalog-message";
+import { BannerImageUpload } from "@/components/admin/banner-image-upload";
 import {
   createBannerAction,
   deleteBannerAction,
@@ -56,8 +56,8 @@ export default async function AdminBannersPage({
           <CardHeader>
             <CardTitle className="text-base">Create banner</CardTitle>
             <CardDescription>
-              Use an approved hosted image URL. Cloudinary upload integration
-              can remain separate from banner scheduling.
+              Upload your PNG, JPG, WEBP, or SVG directly from your computer.
+              The app stores it securely and saves the image URL automatically.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -85,14 +85,10 @@ export default async function AdminBannersPage({
               </div>
 
               <div>
-                <label className="text-xs font-semibold">Banner image URL</label>
-                <input
-                  name="imageUrl"
-                  type="url"
-                  required
-                  placeholder="https://..."
-                  className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                />
+                <label className="text-xs font-semibold">Banner image</label>
+                <div className="mt-1.5">
+                  <BannerImageUpload />
+                </div>
               </div>
 
               <div>
@@ -100,9 +96,12 @@ export default async function AdminBannersPage({
                 <input
                   name="linkUrl"
                   required
-                  placeholder="/products or https://..."
+                  placeholder="/products"
                   className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
                 />
+                <p className="mt-1 text-xs text-neutral-500">
+                  Example: /products or /categories/lighting
+                </p>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
