@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { KeyboardEvent, TouchEvent } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { PublicBanner } from "@/actions/banner";
@@ -104,12 +105,12 @@ export function PromoBannerCarousel({
     goTo(activeIndex - 1);
   }
 
-  function handleTouchStart(event: React.TouchEvent) {
+  function handleTouchStart(event: TouchEvent) {
     touchStartX.current = event.changedTouches[0]?.clientX ?? null;
     setIsPaused(true);
   }
 
-  function handleTouchEnd(event: React.TouchEvent) {
+  function handleTouchEnd(event: TouchEvent) {
     const startX = touchStartX.current;
     const endX = event.changedTouches[0]?.clientX ?? null;
 
@@ -133,7 +134,7 @@ export function PromoBannerCarousel({
     setIsPaused(false);
   }
 
-  function handleKeyDown(event: React.KeyboardEvent<HTMLElement>) {
+  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (!hasMultiple) return;
 
     if (event.key === "ArrowRight") {
