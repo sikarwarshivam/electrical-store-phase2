@@ -2,26 +2,46 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { requireAuth } from "@/lib/auth-utils";
 import { getCustomerOrder } from "@/lib/order-commerce";
+import { cancelCustomerOrderAction } from "@/actions/customer-orders";
+import { getStoreSettings } from "@/actions/store-settings";
 import { formatINRFromPaise } from "@/lib/money";
 import { Badge } from "@/components/ui/badge";
 import { PageContainer } from "@/components/layout/page-container";
+import { CatalogMessage } from "@/components/admin/catalog-message";
 import { notFound } from "next/navigation";
 
 const STEPS = ["PLACED", "CONFIRMED", "PACKED", "SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED"] as const;
 
 export default async function CustomerOrderDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ orderNumber: string }>;
+  searchParams: Promise<{ success?: string; error?: string }>;
 }) {
   const { orderNumber } = await params;
+  const paramsData = await searchParams;
   const user = await requireAuth("/account/orders/" + orderNumber);
-  const order = await getCustomerOrder(user.id, orderNumber);
+  const [order, storeSettings] = await Promise.all([
+    getCustomerOrder(user.id, orderNumber),
+    getStoreSettings(),
+  ]);
 
   if (!order) notFound();
 
   const currentStep = STEPS.indexOf(order.status as (typeof STEPS)[number]);
   const failed = order.status === "FAILED" || order.payment.status === "FAILED";
+  const cutoffIndex = STEPS.indexOf(
+    storeSettings.delivery.cancellation.freeCancellationThroughStatus
+  );
+  const orderStep = STEPS.indexOf(order.status as (typeof STEPS)[number]);
+  const canCancel =
+    storeSettings.delivery.cancellation.enabled &&
+    orderStep >= 0 &&
+    cutoffIndex >= 0 &&
+    orderStep <= cutoffIndex &&
+    order.payment.status === "CAPTURED" &&
+    !!order.payment.gatewayPaymentId;
 
   return (
     <PageContainer
@@ -34,10 +54,54 @@ export default async function CustomerOrderDetailPage({
         </Link>
       }
     >
+      <CatalogMessage success={paramsData.success} error={paramsData.error} />
       {failed ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/20 dark:text-red-200">
           This order was not completed. Payment status: {order.payment.status}.
         </div>
+      ) : order.status === "CANCELLED" ? (
+        <section className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-950">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="destructive">CANCELLED</Badge>
+            <Badge
+              variant={
+                order.payment.refundStatus === "PROCESSED"
+                  ? "success"
+                  : order.payment.refundStatus === "FAILED"
+                    ? "destructive"
+                    : "warning"
+              }
+            >
+              Refund{" "}
+              {order.payment.refundStatus === "PROCESSED"
+                ? "PROCESSED"
+                : order.payment.refundStatus === "FAILED"
+                  ? "FAILED"
+                  : "PENDING"}
+            </Badge>
+          </div>
+          <p className="mt-4 text-sm text-neutral-700 dark:text-neutral-300">
+            Your order has been cancelled and its inventory has been returned to stock.
+          </p>
+          <p className="mt-2 text-xs text-neutral-500">
+            Refund amount:{" "}
+            {formatINRFromPaise(
+              order.payment.refundAmountPaise ?? order.pricing.grandTotalPaise
+            )}
+          </p>
+          {order.payment.refundStatus === "PENDING" ? (
+            <p className="mt-2 text-xs text-neutral-500">
+              The refund has been initiated with Razorpay. The credit timeline depends
+              on the original payment method.
+            </p>
+          ) : null}
+          {order.payment.refundStatus === "FAILED" ? (
+            <p className="mt-2 text-xs text-red-600 dark:text-red-400">
+              We could not complete the automatic refund. Please contact support with
+              this order number.
+            </p>
+          ) : null}
+        </section>
       ) : (
         <>
           <section className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-950">
@@ -137,6 +201,23 @@ export default async function CustomerOrderDetailPage({
                 {order.shippingAddress.landmark ? <p className="text-sm">{order.shippingAddress.landmark}</p> : null}
                 <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}</p>
               </div>
+
+              {canCancel ? (
+                <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+                  <p className="text-xs text-neutral-500">
+                    Cancellation is available until {storeSettings.delivery.cancellation.freeCancellationThroughStatus.replaceAll("_", " ")}.
+                  </p>
+                  <form action={cancelCustomerOrderAction} className="mt-3">
+                    <input type="hidden" name="orderNumber" value={order.orderNumber} />
+                    <button
+                      type="submit"
+                      className="inline-flex h-9 items-center justify-center rounded-md border border-red-300 px-4 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30"
+                    >
+                      Cancel order
+                    </button>
+                  </form>
+                </div>
+              ) : null}
             </aside>
           </div>
         </>
