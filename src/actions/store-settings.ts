@@ -26,6 +26,8 @@ export async function getStoreSettings() {
   const settings = await StoreSettings.findOne({ key: "default" }).lean();
   if (!settings) return DEFAULT_STORE_SETTINGS;
 
+  const codSettings = settings.delivery.cod ?? DEFAULT_STORE_SETTINGS.delivery.cod;
+
   return {
     key: "default" as const,
     delivery: {
@@ -44,10 +46,10 @@ export async function getStoreSettings() {
         flatFeePaise: settings.delivery.courier.flatFeePaise,
       },
       cod: {
-        enabled: settings.delivery.cod.enabled,
-        minOrderValuePaise: settings.delivery.cod.minOrderValuePaise,
-        maxOrderValuePaise: settings.delivery.cod.maxOrderValuePaise,
-        convenienceFeePaise: settings.delivery.cod.convenienceFeePaise,
+        enabled: codSettings.enabled,
+        minOrderValuePaise: codSettings.minOrderValuePaise,
+        maxOrderValuePaise: codSettings.maxOrderValuePaise,
+        convenienceFeePaise: codSettings.convenienceFeePaise,
       },
     },
   };
