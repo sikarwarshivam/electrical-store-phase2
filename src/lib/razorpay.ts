@@ -25,6 +25,15 @@ interface RazorpayPaymentResponse {
   error_description?: string | null;
 }
 
+interface RazorpayRefundResponse {
+  id: string;
+  entity: "refund";
+  amount: number;
+  currency: string;
+  payment_id: string;
+  status: "pending" | "processed" | "failed";
+}
+
 function getRequiredEnv(name: string): string {
   const value = process.env[name]?.trim();
   if (!value) {
@@ -117,6 +126,32 @@ export async function fetchRazorpayPayment(paymentId: string) {
     "/payments/" + encodeURIComponent(paymentId),
     { method: "GET" }
   );
+}
+
+export async function refundRazorpayPayment(input: {
+  paymentId: string;
+  amountPaise: number;
+}) {
+  const response = await razorpayRequest<RazorpayRefundResponse>(
+    "/payments/" + encodeURIComponent(input.paymentId) + "/refund",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        amount: input.amountPaise,
+      }),
+    }
+  );
+
+  if (
+    !response.id ||
+    response.payment_id !== input.paymentId ||
+    response.amount !== input.amountPaise ||
+    response.currency !== "INR"
+  ) {
+    throw new Error("Razorpay returned an invalid refund response.");
+  }
+
+  return response;
 }
 
 function safeCompareHex(leftHex: string, rightHex: string) {
