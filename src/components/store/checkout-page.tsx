@@ -15,9 +15,9 @@ import { PageContainer } from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
 import { reconcileCartAction } from "@/actions/cart";
 import { getCheckoutSavedAddressesAction } from "@/actions/address";
+import { getAvailableCoupons } from "@/actions/coupon";
 import {
   createPaymentOrderAction,
-  getAvailableCoupons,
   validateCouponAction,
   verifyRazorpayPaymentAction,
   type CreatePaymentOrderResult,
