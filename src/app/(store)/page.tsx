@@ -69,7 +69,7 @@ export default async function HomePage() {
                 </div>
                 <div>
                   <p className="text-lg font-bold text-neutral-950 dark:text-white">
-                    {catalog.pagination.total}
+                    {catalog.total}
                   </p>
                   <p className="text-[11px] font-medium text-neutral-500">
                     Published products
