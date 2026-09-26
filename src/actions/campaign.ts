@@ -157,6 +157,8 @@ export async function getAdminCampaign(campaignId: string) {
 export async function createCampaignAction(formData: FormData) {
   await requireAdmin("/admin/campaigns");
 
+  let errorMessage: string | null = null;
+
   try {
     await connectToDatabase();
     await Campaign.create(await parseCampaignInput(formData, false));
@@ -164,23 +166,23 @@ export async function createCampaignAction(formData: FormData) {
     revalidatePath("/admin/campaigns");
     revalidatePath("/campaigns");
     revalidatePath("/");
-
-    redirectWithMessage(
-      "/admin/campaigns",
-      "success",
-      "Festival campaign created."
-    );
   } catch (error) {
-    redirectWithMessage(
-      "/admin/campaigns",
-      "error",
-      isDuplicateKeyError(error)
-        ? "A campaign with that slug already exists."
-        : error instanceof Error
-          ? error.message
-          : "Unable to create campaign."
-    );
+    errorMessage = isDuplicateKeyError(error)
+      ? "A campaign with that slug already exists."
+      : error instanceof Error
+        ? error.message
+        : "Unable to create campaign.";
   }
+
+  if (errorMessage) {
+    redirectWithMessage("/admin/campaigns", "error", errorMessage);
+  }
+
+  redirectWithMessage(
+    "/admin/campaigns",
+    "success",
+    "Festival campaign created."
+  );
 }
 
 export async function updateCampaignAction(formData: FormData) {
@@ -188,6 +190,7 @@ export async function updateCampaignAction(formData: FormData) {
 
   const campaignId = text(formData, "campaignId");
   const returnPath = "/admin/campaigns/" + encodeURIComponent(campaignId);
+  let errorMessage: string | null = null;
 
   try {
     await connectToDatabase();
@@ -195,22 +198,22 @@ export async function updateCampaignAction(formData: FormData) {
     const campaign = await Campaign.findById(input.campaignId);
 
     if (!campaign) {
-      redirectWithMessage("/admin/campaigns", "error", "Campaign not found.");
+      throw new Error("Campaign not found.");
     }
 
-    const previousSlug = campaign!.slug;
+    const previousSlug = campaign.slug;
 
-    campaign!.name = input.name;
-    campaign!.slug = input.slug;
-    campaign!.subtitle = input.subtitle;
-    campaign!.description = input.description;
-    campaign!.imageUrl = input.imageUrl;
-    campaign!.startsAt = input.startsAt;
-    campaign!.expiresAt = input.expiresAt;
-    campaign!.productIds = input.productIds;
-    campaign!.sortOrder = input.sortOrder;
-    campaign!.isActive = input.isActive;
-    await campaign!.save();
+    campaign.name = input.name;
+    campaign.slug = input.slug;
+    campaign.subtitle = input.subtitle;
+    campaign.description = input.description;
+    campaign.imageUrl = input.imageUrl;
+    campaign.startsAt = input.startsAt;
+    campaign.expiresAt = input.expiresAt;
+    campaign.productIds = input.productIds;
+    campaign.sortOrder = input.sortOrder;
+    campaign.isActive = input.isActive;
+    await campaign.save();
 
     revalidatePath("/admin/campaigns");
     revalidatePath(returnPath);
@@ -218,23 +221,23 @@ export async function updateCampaignAction(formData: FormData) {
     revalidatePath("/campaigns/" + previousSlug);
     revalidatePath("/campaigns/" + input.slug);
     revalidatePath("/");
-
-    redirectWithMessage(
-      "/admin/campaigns",
-      "success",
-      "Festival campaign updated."
-    );
   } catch (error) {
-    redirectWithMessage(
-      returnPath,
-      "error",
-      isDuplicateKeyError(error)
-        ? "A campaign with that slug already exists."
-        : error instanceof Error
-          ? error.message
-          : "Unable to update campaign."
-    );
+    errorMessage = isDuplicateKeyError(error)
+      ? "A campaign with that slug already exists."
+      : error instanceof Error
+        ? error.message
+        : "Unable to update campaign.";
   }
+
+  if (errorMessage) {
+    redirectWithMessage(returnPath, "error", errorMessage);
+  }
+
+  redirectWithMessage(
+    "/admin/campaigns",
+    "success",
+    "Festival campaign updated."
+  );
 }
 
 export async function toggleCampaignAction(formData: FormData) {
