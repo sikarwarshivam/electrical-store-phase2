@@ -1,12 +1,26 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import { ArrowRight, FolderTree, Search, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import {
+  ArrowRight,
+  FolderTree,
+  Search,
+  ShieldCheck,
+  SlidersHorizontal,
+} from "lucide-react";
 import { siteConfig } from "@/config/site";
 import { PageContainer } from "@/components/layout/page-container";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/store/product-card";
-import { getPublicCategories, getPublicProducts } from "@/lib/catalog";
+import {
+  getPublicCategories,
+  getPublicProducts,
+} from "@/lib/catalog";
 import { getActiveBanners } from "@/actions/banner";
 import { PromoBannerCarousel } from "@/components/store/promo-banner-carousel";
 
@@ -33,7 +47,7 @@ export default async function HomePage() {
               </Badge>
 
               <h1 className="mt-4 max-w-2xl text-3xl font-extrabold tracking-tight text-neutral-950 sm:text-4xl dark:text-white">
-                Electrical essentials for homes, repairs & projects.
+                Electrical essentials for homes, repairs &amp; projects.
               </h1>
 
               <p className="mt-3 max-w-xl text-sm leading-6 text-neutral-600 dark:text-neutral-300">
@@ -49,6 +63,7 @@ export default async function HomePage() {
                   Shop products
                   <ArrowRight className="h-4 w-4" />
                 </Link>
+
                 <Link
                   href="/categories"
                   className="inline-flex items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-800 shadow-sm transition-colors hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800"
@@ -67,6 +82,7 @@ export default async function HomePage() {
                     Categories
                   </p>
                 </div>
+
                 <div>
                   <p className="text-lg font-bold text-neutral-950 dark:text-white">
                     {catalog.total}
@@ -75,6 +91,7 @@ export default async function HomePage() {
                     Published products
                   </p>
                 </div>
+
                 <div>
                   <p className="text-lg font-bold text-neutral-950 dark:text-white">
                     {banners.length}
@@ -96,6 +113,7 @@ export default async function HomePage() {
                     Jump into a category
                   </p>
                 </div>
+
                 <Link
                   href="/categories"
                   className="text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400"
@@ -105,50 +123,29 @@ export default async function HomePage() {
               </div>
 
               {categories.length > 0 ? (
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {categories.slice(0, 8).map((category) => (
-                <Link
-                  key={category.id}
-                  href={"/categories/" + category.slug}
-                  className="group w-48 shrink-0 overflow-hidden rounded-xl border border-neutral-200 bg-white transition hover:border-amber-300 hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-950"
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-900">
-                    {category.imageUrl ? (
-                      <img
-                        src={category.imageUrl}
-                        alt={category.name}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-neutral-400">
-                        <FolderTree className="h-8 w-8" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between gap-2 px-3 py-2.5">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-sm font-semibold text-neutral-900 group-hover:text-amber-700 dark:text-white dark:group-hover:text-amber-400">
-                        {category.name}
-                      </h3>
-                      <p className="mt-0.5 text-[11px] text-neutral-500">
-                        {category.children.length}{" "}
-                        {category.children.length === 1
-                          ? "subcategory"
-                          : "subcategories"}
-                      </p>
-                    </div>
-                    <ArrowRight className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-hover:translate-x-0.5 group-hover:text-amber-600" />
-                  </div>
-                </Link>
-              ))}
-            </div>          ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {categories.slice(0, 4).map((category) => (
+                    <Link
+                      key={category.id}
+                      href={"/categories/" + category.slug}
+                      className="group overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 transition hover:border-amber-300 hover:bg-amber-50 hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60 dark:hover:border-amber-700 dark:hover:bg-amber-950/20"
+                    >
+                      <div className="relative aspect-[16/10] overflow-hidden bg-neutral-100 dark:bg-neutral-900">
+                        {category.imageUrl ? (
+                          <img
+                            src={category.imageUrl}
+                            alt={category.name}
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            loading="eager"
+                            decoding="async"
+                          />
+                        ) : (
                           <div className="flex h-full items-center justify-center text-neutral-400">
                             <FolderTree className="h-7 w-7" />
                           </div>
                         )}
                       </div>
+
                       <div className="flex items-center justify-between gap-2 px-3 py-2.5">
                         <span className="line-clamp-1 text-xs font-semibold text-neutral-800 dark:text-neutral-100">
                           {category.name}
@@ -175,20 +172,23 @@ export default async function HomePage() {
           title="Shop by category"
           description="Start with a broad product group, then narrow down to a subcategory."
           actions={
-            <Link href="/categories" className="text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400">
+            <Link
+              href="/categories"
+              className="text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400"
+            >
               View all
             </Link>
           }
         >
           {categories.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="flex gap-3 overflow-x-auto pb-2">
               {categories.slice(0, 8).map((category) => (
                 <Link
                   key={category.id}
                   href={"/categories/" + category.slug}
-                  className="group overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"
+                  className="group w-48 shrink-0 overflow-hidden rounded-xl border border-neutral-200 bg-white transition hover:border-amber-300 hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-950"
                 >
-                  <div className="relative aspect-[16/10] overflow-hidden bg-neutral-100 dark:bg-neutral-900">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-900">
                     {category.imageUrl ? (
                       <img
                         src={category.imageUrl}
@@ -199,30 +199,40 @@ export default async function HomePage() {
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-neutral-400">
-                        <FolderTree className="h-10 w-10" />
+                        <FolderTree className="h-8 w-8" />
                       </div>
                     )}
                   </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-neutral-900 group-hover:text-amber-700 dark:text-white dark:group-hover:text-amber-400">
-                      {category.name}
-                    </h3>
-                    <p className="mt-1 text-xs text-neutral-500">
-                      {category.children.length} {category.children.length === 1 ? "subcategory" : "subcategories"}
-                    </p>
+
+                  <div className="flex items-center justify-between gap-2 px-3 py-2.5">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-semibold text-neutral-900 group-hover:text-amber-700 dark:text-white dark:group-hover:text-amber-400">
+                        {category.name}
+                      </h3>
+                      <p className="mt-0.5 text-[11px] text-neutral-500">
+                        {category.children.length}{" "}
+                        {category.children.length === 1
+                          ? "subcategory"
+                          : "subcategories"}
+                      </p>
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-hover:translate-x-0.5 group-hover:text-amber-600" />
                   </div>
                 </Link>
               ))}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-neutral-300 p-10 text-center text-sm text-neutral-500 dark:border-neutral-800">
-              Categories will appear here once they are published in the admin catalog.
+            <div className="rounded-xl border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500 dark:border-neutral-800">
+              Categories will appear here once published.
             </div>
           )}
         </PageContainer>
       </section>
 
-      <section id="products" className="border-y border-neutral-200 bg-neutral-50 py-8 dark:border-neutral-800 dark:bg-neutral-900/30 sm:py-10">
+      <section
+        id="products"
+        className="border-y border-neutral-200 bg-neutral-50 py-8 dark:border-neutral-800 dark:bg-neutral-900/30 sm:py-10"
+      >
         <PageContainer
           title="Latest products"
           description="Published products are pulled from the live catalog and inventory records."
@@ -246,7 +256,8 @@ export default async function HomePage() {
             <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center dark:border-neutral-800 dark:bg-neutral-950">
               <p className="font-semibold">No published products yet.</p>
               <p className="mt-2 text-sm text-neutral-500">
-                Add an active product with at least one active SKU from the admin portal.
+                Add an active product with at least one active SKU from the
+                admin portal.
               </p>
               <Link
                 href="/admin/products"
@@ -264,7 +275,7 @@ export default async function HomePage() {
           title="Find the right electrical specification"
           description="The catalog is designed around SKU-level data rather than generic product names alone."
         >
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -273,9 +284,11 @@ export default async function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm leading-6 text-neutral-600 dark:text-neutral-300">
-                Search product names, SKUs, keywords, and catalog specifications from one place.
+                Search product names, SKUs, keywords, and catalog
+                specifications from one place.
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -284,9 +297,11 @@ export default async function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm leading-6 text-neutral-600 dark:text-neutral-300">
-                Narrow the catalog with category, brand, price, and technical specification filters.
+                Narrow the catalog with category, brand, price, and technical
+                specification filters.
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -295,25 +310,33 @@ export default async function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm leading-6 text-neutral-600 dark:text-neutral-300">
-                Product variants use their own SKU, pricing, sale unit, and inventory status.
+                Product variants use their own SKU, pricing, sale unit, and
+                inventory status.
               </CardContent>
             </Card>
           </div>
         </PageContainer>
       </section>
 
-      <section id="about" className="border-t border-neutral-200 bg-white py-8 dark:border-neutral-800 dark:bg-neutral-950 sm:py-10">
-        <PageContainer title="About the store" description="Store information can be finalized from the central site configuration.">
+      <section
+        id="about"
+        className="border-t border-neutral-200 bg-white py-8 dark:border-neutral-800 dark:bg-neutral-950 sm:py-10"
+      >
+        <PageContainer
+          title="About the store"
+          description="Store information can be finalized from the central site configuration."
+        >
           <div className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
             <div className="max-w-3xl text-sm leading-7 text-neutral-600 dark:text-neutral-300">
               <p>
-                {siteConfig.name} is being built as a focused electrical catalog
-                and commerce experience for retail customers, electricians,
-                contractors, and project buyers. Product content,
-                specifications, pricing, and availability are maintained
-                through the admin catalog.
+                {siteConfig.name} is being built as a focused electrical
+                catalog and commerce experience for retail customers,
+                electricians, contractors, and project buyers. Product
+                content, specifications, pricing, and availability are
+                maintained through the admin catalog.
               </p>
             </div>
+
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/40">
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                 Store information
@@ -328,11 +351,18 @@ export default async function HomePage() {
                 {siteConfig.contact.address}
               </p>
             </div>
-          </div>     </PageContainer>
+          </div>
+        </PageContainer>
       </section>
 
-      <section id="contact" className="border-t border-neutral-200 py-8 dark:border-neutral-800 sm:py-10">
-        <PageContainer title="Contact" description="Client contact details are configured centrally and will be replaced with the shop's approved information.">
+      <section
+        id="contact"
+        className="border-t border-neutral-200 py-8 dark:border-neutral-800 sm:py-10"
+      >
+        <PageContainer
+          title="Contact"
+          description="Client contact details are configured centrally and will be replaced with the shop's approved information."
+        >
           <div className="grid gap-4 sm:grid-cols-3">
             <Card>
               <CardHeader>
@@ -342,6 +372,7 @@ export default async function HomePage() {
                 {siteConfig.contact.email}
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">Phone</CardTitle>
@@ -350,6 +381,7 @@ export default async function HomePage() {
                 {siteConfig.contact.phone}
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">Address</CardTitle>
