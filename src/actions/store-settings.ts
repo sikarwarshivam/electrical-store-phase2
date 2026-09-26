@@ -43,6 +43,12 @@ export async function getStoreSettings() {
         pricingMode: "MANUAL_CONFIGURATION" as const,
         flatFeePaise: settings.delivery.courier.flatFeePaise,
       },
+      cod: {
+        enabled: settings.delivery.cod.enabled,
+        minOrderValuePaise: settings.delivery.cod.minOrderValuePaise,
+        maxOrderValuePaise: settings.delivery.cod.maxOrderValuePaise,
+        convenienceFeePaise: settings.delivery.cod.convenienceFeePaise,
+      },
     },
   };
 }
@@ -59,6 +65,10 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
     slab3ToKm: value(formData, "slab3ToKm"),
     slab3Fee: value(formData, "slab3Fee"),
     courierFlatFee: value(formData, "courierFlatFee"),
+    codEnabled: formData.get("codEnabled") === "on" ? "on" : "off",
+    codMinOrderValue: value(formData, "codMinOrderValue"),
+    codMaxOrderValue: value(formData, "codMaxOrderValue"),
+    codConvenienceFee: value(formData, "codConvenienceFee"),
   });
 
   if (!parsed.success) {
@@ -71,6 +81,14 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
 
   if (!(slab1ToKm > 0 && slab2ToKm > slab1ToKm && slab3ToKm > slab2ToKm)) {
     errorRedirect("Distance slabs must increase in order.");
+  }
+
+  const codMinOrderValuePaise = parseMoneyToPaise(parsed.data.codMinOrderValue);
+  const codMaxOrderValuePaise = parseMoneyToPaise(parsed.data.codMaxOrderValue);
+  if (parsed.data.codEnabled === "on") {
+    if (codMaxOrderValuePaise <= 0 || codMaxOrderValuePaise < codMinOrderValuePaise) {
+      errorRedirect("When COD is enabled, the maximum order value must be greater than or equal to the minimum.");
+    }
   }
 
   try {
@@ -107,6 +125,12 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
             courier: {
               pricingMode: DEFAULT_STORE_SETTINGS.delivery.courier.pricingMode,
               flatFeePaise: parseMoneyToPaise(parsed.data.courierFlatFee),
+            },
+            cod: {
+              enabled: parsed.data.codEnabled === "on",
+              minOrderValuePaise: codMinOrderValuePaise,
+              maxOrderValuePaise: codMaxOrderValuePaise,
+              convenienceFeePaise: parseMoneyToPaise(parsed.data.codConvenienceFee),
             },
           },
         },
