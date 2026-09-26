@@ -149,8 +149,6 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
     );
   }
 
-  const cancellationFeePaise = parseMoneyToPaise(parsed.data.cancellationFee);
-
   try {
     await connectToDatabase();
 
