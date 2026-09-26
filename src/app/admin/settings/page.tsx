@@ -366,16 +366,16 @@ export default async function AdminSettingsPage({
             <CardHeader>
               <CardTitle className="text-base">Order Cancellation</CardTitle>
               <CardDescription>
-                Configure free cancellation and the fee for cancellation after
-                shipment has started.
+                Configure the final early-stage cancellation cutoff. Orders cannot
+                be cancelled once shipping has started.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
-                Free cancellation is available through the selected early order
-                status. From SHIPPED through OUT_FOR_DELIVERY, the configured
-                cancellation fee can apply. Once the order is DELIVERED, it is
-                treated as a return/refund case instead of a cancellation.
+                Customer cancellation is allowed only through the selected early
+                status. Once an order reaches SHIPPED, OUT_FOR_DELIVERY, or
+                DELIVERED, cancellation is not available. Delivered-order issues
+                are handled separately by the returns/refunds policy.
               </div>
 
               <div className="flex items-center gap-3">
@@ -394,55 +394,27 @@ export default async function AdminSettingsPage({
                 </label>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="free-cancellation-through-status"
-                    className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
-                  >
-                    Free cancellation through
-                  </label>
-                  <select
-                    id="free-cancellation-through-status"
-                    name="freeCancellationThroughStatus"
-                    defaultValue={
-                      settings.delivery.cancellation.freeCancellationThroughStatus
-                    }
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                  >
-                    <option value="PLACED">Placed</option>
-                    <option value="CONFIRMED">Confirmed</option>
-                    <option value="PACKED">Packed</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="cancellation-fee"
-                    className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
-                  >
-                    Post-shipment cancellation fee (₹)
-                  </label>
-                  <input
-                    id="cancellation-fee"
-                    name="cancellationFee"
-                    type="text"
-                    inputMode="decimal"
-                    required
-                    defaultValue={rupees(
-                      settings.delivery.cancellation.feePaise
-                    )}
-                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-md border border-neutral-200 p-4 text-xs text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
-                <p>
-                  <strong>Paid cancellation:</strong> SHIPPED → OUT_FOR_DELIVERY
-                </p>
-                <p className="mt-1">
-                  <strong>DELIVERED:</strong> use the returns/refunds workflow.
+              <div>
+                <label
+                  htmlFor="free-cancellation-through-status"
+                  className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+                >
+                  Free cancellation through
+                </label>
+                <select
+                  id="free-cancellation-through-status"
+                  name="freeCancellationThroughStatus"
+                  defaultValue={
+                    settings.delivery.cancellation.freeCancellationThroughStatus
+                  }
+                  className="mt-1.5 h-10 w-full max-w-sm rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                >
+                  <option value="PLACED">Placed</option>
+                  <option value="CONFIRMED">Confirmed</option>
+                  <option value="PACKED">Packed</option>
+                </select>
+                <p className="mt-1 text-xs text-neutral-500">
+                  After PACKED, SHIPPED and later states cannot be cancelled.
                 </p>
               </div>
             </CardContent>
