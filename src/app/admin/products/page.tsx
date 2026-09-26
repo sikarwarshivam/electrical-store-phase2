@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CatalogMessage } from "@/components/admin/catalog-message";
 import { FieldLabel } from "@/components/admin/field-label";
+import { ProductImagesUpload } from "@/components/admin/product-images-upload";
 import {
   archiveProductAction,
   createProductAction,
@@ -256,18 +257,14 @@ export default async function AdminProductsPage({
 
               <div>
                 <FieldLabel
-                  htmlFor="product-images"
-                  hint='Image URLs for now. Cloudinary upload comes in the media phase.'
+                  htmlFor="product-images-upload"
+                  hint="Upload product images directly to Cloudinary. You can set the primary image and edit alt text."
                 >
-                  Images JSON
+                  Product images
                 </FieldLabel>
-                <textarea
-                  id="product-images"
-                  name="imagesJson"
-                  rows={5}
-                  className="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 font-mono text-xs dark:border-neutral-700 dark:bg-neutral-900"
-                  placeholder='[]'
-                />
+                <div id="product-images-upload" className="mt-1.5">
+                  <ProductImagesUpload />
+                </div>
               </div>
 
               <Button type="submit" className="w-full">
