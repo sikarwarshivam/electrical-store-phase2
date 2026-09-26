@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Image } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -63,7 +63,7 @@ export default async function EditBannerPage({
       <Card className="max-w-3xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Image className="h-4 w-4 text-amber-600" />
+            <ImageIcon className="h-4 w-4 text-amber-600" />
             Banner details
           </CardTitle>
           <CardDescription>
