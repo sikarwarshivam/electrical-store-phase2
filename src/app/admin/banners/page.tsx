@@ -1,5 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import { Image, Pencil } from "lucide-react";
+import { Image as ImageIcon, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +45,7 @@ export default async function AdminBannersPage({
       description="Manage homepage banners with links, display order, and scheduled active dates."
       actions={
         <Badge variant="outline">
-          <Image className="mr-1.5 h-3.5 w-3.5" />
+          <ImageIcon className="mr-1.5 h-3.5 w-3.5" />
           {banners.length} banner{banners.length === 1 ? "" : "s"}
         </Badge>
       }
