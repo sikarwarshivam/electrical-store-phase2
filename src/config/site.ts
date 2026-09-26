@@ -44,6 +44,7 @@ export const siteConfig = {
     { title: "Inventory", href: "/admin/inventory", icon: "Boxes" },
     { title: "Customers", href: "/admin/customers", icon: "Users" },
     { title: "Coupons", href: "/admin/coupons", icon: "Tag" },
+    { title: "Banners", href: "/admin/banners", icon: "Image" },
     { title: "Settings", href: "/admin/settings", icon: "Settings" },
   ],
 } as const;
