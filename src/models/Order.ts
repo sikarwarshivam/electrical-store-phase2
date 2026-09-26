@@ -77,6 +77,7 @@ export interface IOrderPricing {
   currency: "INR";
   subtotalPaise: number;
   discountPaise: number;
+  couponCode?: string;
   shippingPaise: number;
   taxPaise: number;
   taxIncludedPaise: number;
@@ -205,6 +206,7 @@ const OrderPricingSchema = new Schema<IOrderPricing>(
     currency: { type: String, enum: ["INR"], default: "INR", required: true },
     subtotalPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
     discountPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
+    couponCode: { type: String, trim: true, uppercase: true, maxlength: 40 },
     shippingPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
     taxPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
     taxIncludedPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },

@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { connectToDatabase } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { createRazorpayOrder, fetchRazorpayPayment, getRazorpayKeyId, verifyRazorpayPaymentSignature } from "@/lib/razorpay";
-import { consumeOrderReservation, releaseExpiredOrderReservations, releaseOrderInventory, reserveOrderInventory } from "@/lib/order-commerce";
+import { calculateCouponDiscount, consumeCouponUsage, releaseCouponUsage, consumeOrderReservation, releaseExpiredOrderReservations, releaseOrderInventory, reserveCouponUsage, reserveOrderInventory } from "@/lib/order-commerce";
 import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
 import {
@@ -117,6 +117,19 @@ function createOrderNumber() {
   return "ELC-" + yyyy + mm + dd + "-" + randomBytes(4).toString("hex").toUpperCase();
 }
 
+export type ValidateCouponResult =
+  | { success: true; code: string; discountPaise: number }
+  | { success: false; error: string };
+
+export async function validateCouponAction(input: unknown): Promise<ValidateCouponResult> {
+  const value = typeof input === "object" && input !== null ? input as { code?: unknown; subtotalPaise?: unknown } : {};
+  const code = typeof value.code === "string" ? value.code : "";
+  const subtotalPaise = typeof value.subtotalPaise === "number" ? value.subtotalPaise : -1;
+  const result = await calculateCouponDiscount(code, subtotalPaise);
+  if (!result.success) return result;
+  return { success: true, code: result.code, discountPaise: result.discountPaise };
+}
+
 export type CreatePaymentOrderResult =
   | {
       success: true;
@@ -128,6 +141,8 @@ export type CreatePaymentOrderResult =
       subtotalPaise: number;
       shippingPaise: number;
       taxPaise: number;
+      discountPaise: number;
+      couponCode?: string;
       currency: "INR";
       reservationExpiresAt: string;
     }
@@ -148,7 +163,7 @@ export async function createPaymentOrderAction(
     await connectToDatabase();
     await releaseExpiredOrderReservations();
 
-    const { checkoutId, items, address } = parsed.data;
+    const { checkoutId, items, address, couponCode } = parsed.data;
     const existing = await Order.findOne({ checkoutId });
 
     if (existing) {
@@ -166,6 +181,8 @@ export async function createPaymentOrderAction(
           subtotalPaise: existing.pricing.subtotalPaise,
           shippingPaise: existing.pricing.shippingPaise,
           taxPaise: existing.pricing.taxPaise,
+          discountPaise: existing.pricing.discountPaise,
+          couponCode: existing.pricing.couponCode,
           currency: "INR",
           reservationExpiresAt: existing.reservation.expiresAt.toISOString(),
         };
@@ -246,12 +263,23 @@ export async function createPaymentOrderAction(
     const taxPaise = lines.reduce((total, line) => total + line.taxPaise, 0);
     const taxIncludedPaise = lines.reduce((total, line) => total + line.taxIncludedPaise, 0);
     const taxAddedPaise = lines.reduce((total, line) => total + line.taxAddedPaise, 0);
-    const discountPaise = 0;
     const shippingPaise = parseConfiguredPaise("SHIPPING_FLAT_RATE_PAISE", 0);
+    let discountPaise = 0;
+    let appliedCouponCode: string | undefined;
+
+    if (couponCode) {
+      const couponResult = await calculateCouponDiscount(couponCode, subtotalPaise);
+      if (!couponResult.success) return { success: false, error: couponResult.error };
+      const reserved = await reserveCouponUsage(couponResult.code);
+      if (!reserved) return { success: false, error: "This coupon is no longer available. Please try again." };
+      discountPaise = couponResult.discountPaise;
+      appliedCouponCode = couponResult.code;
+    }
     const grandTotalPaise =
       subtotalPaise - discountPaise + shippingPaise + taxAddedPaise;
 
     if (grandTotalPaise <= 0) {
+      if (appliedCouponCode) await releaseCouponUsage(appliedCouponCode);
       return {
         success: false,
         error: "Online payment requires a positive order total.",
@@ -301,6 +329,7 @@ export async function createPaymentOrderAction(
         currency: "INR",
         subtotalPaise,
         discountPaise,
+        couponCode: appliedCouponCode,
         shippingPaise,
         taxPaise,
         taxIncludedPaise,
@@ -322,7 +351,12 @@ export async function createPaymentOrderAction(
       },
     });
 
-    await order.save();
+    try {
+      await order.save();
+    } catch (orderSaveError) {
+      if (appliedCouponCode) await releaseCouponUsage(appliedCouponCode);
+      throw orderSaveError;
+    }
 
     try {
       await reserveOrderInventory(order._id.toString());
@@ -343,6 +377,7 @@ export async function createPaymentOrderAction(
         }
       );
 
+      if (appliedCouponCode) await releaseCouponUsage(appliedCouponCode);
       return {
         success: false,
         error:
@@ -392,6 +427,7 @@ export async function createPaymentOrderAction(
           order._id.toString(),
           "Payment order creation failed."
         );
+        if (appliedCouponCode) await releaseCouponUsage(appliedCouponCode);
       } catch (releaseError) {
         logger.error(
           "Failed to release inventory after Razorpay order creation failure",
@@ -498,6 +534,7 @@ export async function verifyRazorpayPaymentAction(
     if (payment.status !== "captured") {
       if (payment.status === "failed") {
         await releaseOrderInventory(order._id.toString(), "Razorpay payment failed.");
+        if (order.pricing.couponCode) await releaseCouponUsage(order.pricing.couponCode);
         await Order.updateOne(
           { _id: order._id, status: "PAYMENT_PENDING" },
           {
@@ -523,6 +560,7 @@ export async function verifyRazorpayPaymentAction(
     }
 
     await consumeOrderReservation(order._id.toString(), "Razorpay payment captured.");
+    if (order.pricing.couponCode) await consumeCouponUsage(order.pricing.couponCode);
 
     await Order.updateOne(
       { _id: order._id, status: "PAYMENT_PENDING" },

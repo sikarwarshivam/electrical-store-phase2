@@ -12,6 +12,7 @@ export interface ICoupon extends Document {
   expiresAt: Date;
   usageLimit: number;
   usedCount: number;
+  reservedCount: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -51,6 +52,14 @@ const CouponSchema = new Schema<ICoupon>(
     startsAt: { type: Date, required: true, index: true },
     expiresAt: { type: Date, required: true, index: true },
     usageLimit: {
+      type: Number,
+      required: true,
+      integer: true,
+      min: 0,
+      max: 1_000_000,
+      default: 0,
+    },
+    reservedCount: {
       type: Number,
       required: true,
       integer: true,
