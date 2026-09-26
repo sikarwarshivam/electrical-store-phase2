@@ -17,6 +17,7 @@ import { reconcileCartAction } from "@/actions/cart";
 import { getCheckoutSavedAddressesAction } from "@/actions/address";
 import {
   createPaymentOrderAction,
+  getAvailableCoupons,
   validateCouponAction,
   verifyRazorpayPaymentAction,
   type CreatePaymentOrderResult,
@@ -169,6 +170,8 @@ export function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPaise: number } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
+  const [availableOffers, setAvailableOffers] = useState<Awaited<ReturnType<typeof getAvailableCoupons>>>([]);
+  const [offersLoading, setOffersLoading] = useState(true);
 
   function isAddressBlank(value: AddressState) {
     return !Object.values(value).some((field) => field.trim());
@@ -251,6 +254,27 @@ export function CheckoutPage() {
     // Cart metadata changes do not require a second server reconciliation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHydrated, signature]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadOffers() {
+      try {
+        const offers = await getAvailableCoupons();
+        if (active) setAvailableOffers(offers);
+      } catch {
+        if (active) setAvailableOffers([]);
+      } finally {
+        if (active) setOffersLoading(false);
+      }
+    }
+
+    void loadOffers();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -467,8 +491,8 @@ export function CheckoutPage() {
 
   const continueDisabled = loading || !cartVerified || !addressComplete;
 
-  async function applyCoupon() {
-    const code = couponCode.trim().toUpperCase();
+  async function applyCoupon(codeOverride?: string) {
+    const code = (codeOverride ?? couponCode).trim().toUpperCase();
     if (!code) {
       setCouponError("Enter a coupon code.");
       return;
@@ -479,6 +503,7 @@ export function CheckoutPage() {
     }
     setCouponLoading(true);
     setCouponError("");
+    setCouponCode(code);
     try {
       const result = await validateCouponAction({ code, subtotalPaise });
       if (!result.success) {
@@ -787,6 +812,30 @@ export function CheckoutPage() {
             </div>
             {appliedCoupon ? <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">Coupon {appliedCoupon.code} applied.</p> : null}
             {couponError ? <p className="mt-2 text-xs font-medium text-red-600">{couponError}</p> : null}
+            {!offersLoading && availableOffers.length > 0 ? (
+              <div className="mt-4 border-t border-neutral-200 pt-3 dark:border-neutral-800">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Available offers</p>
+                  <span className="text-[11px] text-neutral-500">Tap to apply</span>
+                </div>
+                <div className="space-y-2">
+                  {availableOffers.map((offer) => (
+                    <div key={offer.code} className="flex items-center justify-between gap-3 rounded-md border border-neutral-200 bg-white px-3 py-2.5 dark:border-neutral-800 dark:bg-neutral-950">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold">
+                          {offer.discountType === "PERCENTAGE" ? offer.discountValue + "% off" : formatINRFromPaise(offer.discountValue) + " off"}
+                          <span className="ml-2 rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] dark:bg-neutral-800">{offer.code}</span>
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-neutral-500">
+                          {offer.minOrderValuePaise > 0 ? "On orders above " + formatINRFromPaise(offer.minOrderValuePaise) : "No minimum order"} · Ends {new Date(offer.expiresAt).toLocaleDateString("en-IN")}
+                        </p>
+                      </div>
+                      <Button type="button" variant="outline" className="h-8 shrink-0 px-2.5 text-xs" disabled={couponLoading || !cartVerified} onClick={() => void applyCoupon(offer.code)}>Use</Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-neutral-800">
