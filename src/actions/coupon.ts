@@ -6,7 +6,11 @@ import { requireAdmin } from "@/lib/auth-utils";
 import { connectToDatabase } from "@/lib/db";
 import { parseMoneyToPaise } from "@/lib/money";
 import { Coupon } from "@/models/Coupon";
-import { couponCreateSchema, couponIdSchema } from "@/schemas/coupon";
+import {
+  couponCreateSchema,
+  couponIdSchema,
+  couponUpdateSchema,
+} from "@/schemas/coupon";
 
 function value(formData: FormData, key: string) {
   const raw = formData.get(key);
@@ -52,7 +56,121 @@ export async function getAdminCoupons() {
   };
 }
 
-export async function createCouponAction(formData: FormData) {
+export type PublicCouponOffer = {
+  code: string;
+  discountType: "PERCENTAGE" | "FLAT";
+  discountValue: number;
+  minOrderValuePaise: number;
+  expiresAt: string;
+};
+
+export async function getAvailableCoupons(): Promise<PublicCouponOffer[]> {
+  await connectToDatabase();
+
+  const now = new Date();
+  const coupons = await Coupon.find({
+    isActive: true,
+    startsAt: { $lte: now },
+    expiresAt: { $gt: now },
+    $expr: {
+      $or: [
+        { $eq: ["$usageLimit", 0] },
+        {
+          $lt: [
+            { $add: ["$usedCount", { $ifNull: ["$reservedCount", 0] }] },
+            "$usageLimit",
+          ],
+        },
+      ],
+    },
+  })
+    .select("code discountType discountValue minOrderValuePaise expiresAt")
+    .sort({ discountType: 1, discountValue: -1, minOrderValuePaise: 1, expiresAt: 1 })
+    .limit(6)
+    .lean();
+
+  return coupons.map((coupon) => ({
+    code: coupon.code,
+    discountType: coupon.discountType,
+    discountValue: coupon.discountValue,
+    minOrderValuePaise: coupon.minOrderValuePaise,
+    expiresAt: coupon.expiresAt.toISOString(),
+  }));
+}
+
+export async function updateCouponAction(formData: FormData) {
+  await requireAdmin("/admin/coupons");
+
+  const parsed = couponUpdateSchema.safeParse({
+    couponId: value(formData, "couponId"),
+    code: value(formData, "code"),
+    discountType: value(formData, "discountType") || "PERCENTAGE",
+    discountValue: value(formData, "discountValue"),
+    minOrderValue: value(formData, "minOrderValue"),
+    startsAt: value(formData, "startsAt"),
+    expiresAt: value(formData, "expiresAt"),
+    usageLimit: value(formData, "usageLimit"),
+    isActive: formData.get("isActive") === "on" ? "on" : "off",
+  });
+
+  if (!parsed.success) {
+    errorRedirect(parsed.error.issues[0]?.message || "Please check the coupon details.");
+  }
+
+  const discountValue = Number(parsed.data.discountValue);
+  const usageLimit = Number(parsed.data.usageLimit);
+  const minOrderValuePaise = parseMoneyToPaise(parsed.data.minOrderValue);
+  const startsAt = parseDate(parsed.data.startsAt, "Start date");
+  const expiresAt = parseDate(parsed.data.expiresAt, "Expiry date");
+
+  if (!Number.isFinite(discountValue) || discountValue <= 0) {
+    errorRedirect("Discount value must be greater than zero.");
+  }
+  if (parsed.data.discountType === "PERCENTAGE" && discountValue > 100) {
+    errorRedirect("Percentage discount cannot be greater than 100%.");
+  }
+  if (parsed.data.discountType === "FLAT" && parseMoneyToPaise(parsed.data.discountValue) <= 0) {
+    errorRedirect("Flat discount must be greater than zero.");
+  }
+  if (!Number.isInteger(usageLimit) || usageLimit < 0 || usageLimit > 1_000_000) {
+    errorRedirect("Usage limit must be a whole number from 0 to 1,000,000.");
+  }
+  if (expiresAt <= startsAt) {
+    errorRedirect("Expiry date must be later than the start date.");
+  }
+
+  await connectToDatabase();
+  const coupon = await Coupon.findById(parsed.data.couponId);
+  if (!coupon) errorRedirect("Coupon not found.");
+
+  const usedCount = coupon.usedCount ?? 0;
+  const reservedCount = coupon.reservedCount ?? 0;
+  if (usageLimit > 0 && usageLimit < usedCount + reservedCount) {
+    errorRedirect("Usage limit cannot be lower than usage already used or reserved.");
+  }
+  if (coupon.code !== parsed.data.code && usedCount > 0) {
+    errorRedirect("A used coupon cannot have its code changed.");
+  }
+
+  coupon.code = parsed.data.code;
+  coupon.discountType = parsed.data.discountType;
+  coupon.discountValue =
+    parsed.data.discountType === "FLAT"
+      ? parseMoneyToPaise(parsed.data.discountValue)
+      : discountValue;
+  coupon.minOrderValuePaise = minOrderValuePaise;
+  coupon.startsAt = startsAt;
+  coupon.expiresAt = expiresAt;
+  coupon.usageLimit = usageLimit;
+  coupon.isActive = parsed.data.isActive === "on";
+  await coupon.save();
+
+  revalidatePath("/admin/coupons");
+  revalidatePath("/");
+  successRedirect("Coupon updated.");
+}
+
+export async function createCouponAction(formData: FormData)
   await requireAdmin("/admin/coupons");
 
   const parsed = couponCreateSchema.safeParse({
