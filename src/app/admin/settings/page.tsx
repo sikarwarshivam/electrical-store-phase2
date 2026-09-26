@@ -362,6 +362,82 @@ export default async function AdminSettingsPage({
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Order Cancellation</CardTitle>
+              <CardDescription>
+                Configure the starting cancellation policy. This is stored now and
+                will be enforced when the customer cancellation/refund workflow is
+                connected.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+                Starter configuration only: cancellation is allowed through
+                <strong> PACKED </strong> with no fee. Confirm the final policy with
+                the owner before launch.
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  id="cancellation-enabled"
+                  name="cancellationEnabled"
+                  type="checkbox"
+                  defaultChecked={settings.delivery.cancellation.enabled}
+                  className="h-4 w-4 rounded border-neutral-300"
+                />
+                <label
+                  htmlFor="cancellation-enabled"
+                  className="text-sm font-medium text-neutral-800 dark:text-neutral-200"
+                >
+                  Allow customer cancellation
+                </label>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="cancellation-through-status"
+                    className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+                  >
+                    Cancellation allowed through
+                  </label>
+                  <select
+                    id="cancellation-through-status"
+                    name="cancellationThroughStatus"
+                    defaultValue={settings.delivery.cancellation.cancelableThroughStatus}
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  >
+                    <option value="PLACED">Placed</option>
+                    <option value="CONFIRMED">Confirmed</option>
+                    <option value="PACKED">Packed</option>
+                  </select>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    SHIPPED and later states are outside this configurable cutoff.
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="cancellation-fee"
+                    className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+                  >
+                    Cancellation fee (₹)
+                  </label>
+                  <input
+                    id="cancellation-fee"
+                    name="cancellationFee"
+                    type="text"
+                    inputMode="decimal"
+                    required
+                    defaultValue={rupees(settings.delivery.cancellation.feePaise)}
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="flex justify-end">
             <Button type="submit">Save delivery settings</Button>
           </div>
