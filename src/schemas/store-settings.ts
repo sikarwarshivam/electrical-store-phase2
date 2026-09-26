@@ -19,6 +19,10 @@ export const storeDeliverySettingsSchema = z.object({
   slab3ToKm: distanceSchema,
   slab3Fee: moneyRupeesSchema,
   courierFlatFee: moneyRupeesSchema,
+  codEnabled: z.enum(["on", "off"]).default("off"),
+  codMinOrderValue: moneyRupeesSchema,
+  codMaxOrderValue: moneyRupeesSchema,
+  codConvenienceFee: moneyRupeesSchema,
 });
 
 export type StoreDeliverySettingsInput = z.infer<
