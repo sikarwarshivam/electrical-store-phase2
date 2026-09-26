@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { connectToDatabase } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { createRazorpayOrder, fetchRazorpayPayment, getRazorpayKeyId, verifyRazorpayPaymentSignature } from "@/lib/razorpay";
-import { consumeOrderReservation, releaseExpiredOrderReservations, releaseOrderInventory, reserveOrderInventory } from "@/lib/order-commerce";
+import { calculateCouponDiscount, consumeCouponUsage, releaseCouponUsage, consumeOrderReservation, releaseExpiredOrderReservations, releaseOrderInventory, reserveCouponUsage, reserveOrderInventory } from "@/lib/order-commerce";
 import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
 import {
@@ -128,6 +128,8 @@ export type CreatePaymentOrderResult =
       subtotalPaise: number;
       shippingPaise: number;
       taxPaise: number;
+      discountPaise: number;
+      couponCode?: string;
       currency: "INR";
       reservationExpiresAt: string;
     }
@@ -148,7 +150,7 @@ export async function createPaymentOrderAction(
     await connectToDatabase();
     await releaseExpiredOrderReservations();
 
-    const { checkoutId, items, address } = parsed.data;
+    const { checkoutId, items, address, couponCode } = parsed.data;
     const existing = await Order.findOne({ checkoutId });
 
     if (existing) {
@@ -246,8 +248,18 @@ export async function createPaymentOrderAction(
     const taxPaise = lines.reduce((total, line) => total + line.taxPaise, 0);
     const taxIncludedPaise = lines.reduce((total, line) => total + line.taxIncludedPaise, 0);
     const taxAddedPaise = lines.reduce((total, line) => total + line.taxAddedPaise, 0);
-    const discountPaise = 0;
     const shippingPaise = parseConfiguredPaise("SHIPPING_FLAT_RATE_PAISE", 0);
+    let discountPaise = 0;
+    let appliedCouponCode: string | undefined;
+
+    if (couponCode) {
+      const couponResult = await calculateCouponDiscount(couponCode, subtotalPaise);
+      if (!couponResult.success) return { success: false, error: couponResult.error };
+      const reserved = await reserveCouponUsage(couponResult.code);
+      if (!reserved) return { success: false, error: "This coupon is no longer available. Please try again." };
+      discountPaise = couponResult.discountPaise;
+      appliedCouponCode = couponResult.code;
+    }
     const grandTotalPaise =
       subtotalPaise - discountPaise + shippingPaise + taxAddedPaise;
 
@@ -301,6 +313,7 @@ export async function createPaymentOrderAction(
         currency: "INR",
         subtotalPaise,
         discountPaise,
+        couponCode: appliedCouponCode,
         shippingPaise,
         taxPaise,
         taxIncludedPaise,
@@ -392,6 +405,7 @@ export async function createPaymentOrderAction(
           order._id.toString(),
           "Payment order creation failed."
         );
+        if (appliedCouponCode) await releaseCouponUsage(appliedCouponCode);
       } catch (releaseError) {
         logger.error(
           "Failed to release inventory after Razorpay order creation failure",
