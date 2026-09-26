@@ -202,7 +202,7 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
           },
         },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     );
 
     revalidatePath("/admin/settings");
