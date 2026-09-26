@@ -279,6 +279,7 @@ export async function createPaymentOrderAction(
       subtotalPaise - discountPaise + shippingPaise + taxAddedPaise;
 
     if (grandTotalPaise <= 0) {
+      if (appliedCouponCode) await releaseCouponUsage(appliedCouponCode);
       return {
         success: false,
         error: "Online payment requires a positive order total.",
@@ -350,7 +351,12 @@ export async function createPaymentOrderAction(
       },
     });
 
-    await order.save();
+    try {
+      await order.save();
+    } catch (orderSaveError) {
+      if (appliedCouponCode) await releaseCouponUsage(appliedCouponCode);
+      throw orderSaveError;
+    }
 
     try {
       await reserveOrderInventory(order._id.toString());
