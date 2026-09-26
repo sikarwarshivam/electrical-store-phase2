@@ -53,7 +53,7 @@ function money(paise: number) {
 function emailAddress(value?: string) {
   const normalized = value?.trim().toLowerCase();
   if (!normalized) return null;
-  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalized)
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)
     ? normalized
     : null;
 }
@@ -61,7 +61,7 @@ function emailAddress(value?: string) {
 function baseUrl() {
   const configured = process.env.NEXTAUTH_URL?.trim();
   if (!configured) return "http://localhost:3000";
-  return configured.replace(/\\/$/, "");
+  return configured.replace(/\/$/, "");
 }
 
 function orderUrl(orderNumber: string) {
