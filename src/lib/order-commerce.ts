@@ -81,7 +81,7 @@ export async function reserveOrderInventory(orderId: string) {
           reservedQuantity: item.quantity,
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!inventory) {
@@ -151,7 +151,7 @@ export async function releaseOrderInventory(orderId: string, reason: string) {
           reservedQuantity: -item.quantity,
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!inventory) {
@@ -217,7 +217,7 @@ export async function consumeOrderReservation(orderId: string, reason: string) {
           reservedQuantity: -item.quantity,
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!inventory) {
@@ -269,7 +269,7 @@ export async function restockCancelledOrderInventory(
           availableQuantity: item.quantity,
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!inventory) continue;
@@ -315,7 +315,7 @@ export async function releaseExpiredOrderReservations() {
         "reservation.expiresAt": { $lte: now },
       },
       { $set: { status: "FAILED" } },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!claimed) continue;
