@@ -29,7 +29,7 @@ export function LoadingState({
   return (
     <div
       className={cn(
-        "flex min-h-[250px] flex-col items-center justify-center p-8 text-center",
+        "flex min-h-250px flex-col items-center justify-center p-8 text-center",
         className
       )}
     >
