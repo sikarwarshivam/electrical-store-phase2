@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { Megaphone, Pencil, Plus } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
