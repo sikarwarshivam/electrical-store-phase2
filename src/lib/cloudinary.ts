@@ -6,12 +6,23 @@ type CloudinaryConfig = {
   apiSecret: string;
 };
 
+function isPlaceholder(value: string) {
+  return /^(your_|replace_|placeholder|example|changeme)/i.test(value);
+}
+
 function readConfig(): CloudinaryConfig | null {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
   const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
   const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
 
-  if (!cloudName || !apiKey || !apiSecret) {
+  if (
+    !cloudName ||
+    !apiKey ||
+    !apiSecret ||
+    isPlaceholder(cloudName) ||
+    isPlaceholder(apiKey) ||
+    isPlaceholder(apiSecret)
+  ) {
     return null;
   }
 
