@@ -57,6 +57,7 @@ export async function sendTransactionalEmail(message: EmailMessage) {
       body: JSON.stringify({
         from: config.from,
         to: [message.to],
+        subject: message.subject,
         ...(config.replyTo ? { reply_to: config.replyTo } : {}),
         html: message.html,
         text: message.text,
