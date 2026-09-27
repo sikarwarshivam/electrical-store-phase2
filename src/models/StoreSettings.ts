@@ -195,6 +195,7 @@ export const DEFAULT_STORE_SETTINGS = {
     },
     serviceability: {
       selfDeliveryPincodes: [],
+      selfDeliveryPincodeDistances: [],
       courierPincodes: [],
     },
     cancellation: {
