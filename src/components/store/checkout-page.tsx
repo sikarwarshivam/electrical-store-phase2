@@ -517,7 +517,9 @@ export function CheckoutPage() {
         if (!active) return;
         setQuote(null);
         setQuoteKey("");
-        setQuoteError("");
+        setQuoteError(
+          "Unable to calculate delivery and taxes right now. Please try again."
+        );
       }
     }
 
