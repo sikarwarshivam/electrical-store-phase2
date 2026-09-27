@@ -24,6 +24,7 @@ export const storeDeliverySettingsSchema = z.object({
   codMaxOrderValue: moneyRupeesSchema,
   codConvenienceFee: moneyRupeesSchema,
   selfDeliveryPincodes: z.string().max(20000).default(""),
+  selfDeliveryPincodeDistances: z.string().max(30000).default(""),
   courierPincodes: z.string().max(20000).default(""),
   cancellationEnabled: z.enum(["on", "off"]).default("on"),
   freeCancellationThroughStatus: z.enum(["PLACED", "CONFIRMED", "PACKED"]),
