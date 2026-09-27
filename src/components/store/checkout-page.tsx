@@ -177,6 +177,7 @@ export function CheckoutPage() {
     Extract<CheckoutQuoteResult, { success: true }> | null
   >(null);
   const [quoteKey, setQuoteKey] = useState("");
+  const [quoteError, setQuoteError] = useState("");
 
   function isAddressBlank(value: AddressState) {
     return !Object.values(value).some((field) => field.trim());
@@ -228,6 +229,7 @@ export function CheckoutPage() {
       setPaymentError("");
       setQuote(null);
       setQuoteKey("");
+      setQuoteError("");
       setLoading(true);
       setIssues([]);
 
@@ -459,33 +461,6 @@ export function CheckoutPage() {
     }
   }
 
-  if (!isHydrated) {
-    return (
-      <PageContainer title="Checkout" description="Loading checkout...">
-        <div className="min-h-32" />
-      </PageContainer>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <PageContainer
-        title="Checkout"
-        description="Complete your purchase securely."
-      >
-        <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-12 text-center dark:border-neutral-800 dark:bg-neutral-950">
-          <h2 className="text-lg font-bold">Your cart is empty</h2>
-          <p className="mt-1 text-sm text-neutral-500">
-            Add a product before entering checkout.
-          </p>
-          <Link href="/products" className="mt-5 inline-flex">
-            <Button>Browse products</Button>
-          </Link>
-        </div>
-      </PageContainer>
-    );
-  }
-
   const cartVerified =
     verifiedSignature === signature &&
     lines.length === items.length &&
@@ -530,18 +505,19 @@ export function CheckoutPage() {
         if (!result.success) {
           setQuote(null);
           setQuoteKey("");
-          setCouponError(
-            result.error.includes("coupon") ? result.error : ""
-          );
+          setQuoteError(result.error);
           return;
         }
 
         setQuote(result);
         setQuoteKey(requestedQuoteKey);
+        setQuoteError("");
+        setCouponError("");
       } catch {
         if (!active) return;
         setQuote(null);
         setQuoteKey("");
+        setQuoteError("");
       }
     }
 
@@ -564,6 +540,34 @@ export function CheckoutPage() {
     !addressComplete ||
     !hasCurrentQuote;
 
+
+  if (!isHydrated) {
+    return (
+      <PageContainer title="Checkout" description="Loading checkout...">
+        <div className="min-h-32" />
+      </PageContainer>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <PageContainer
+        title="Checkout"
+        description="Complete your purchase securely."
+      >
+        <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-12 text-center dark:border-neutral-800 dark:bg-neutral-950">
+          <h2 className="text-lg font-bold">Your cart is empty</h2>
+          <p className="mt-1 text-sm text-neutral-500">
+            Add a product before entering checkout.
+          </p>
+          <Link href="/products" className="mt-5 inline-flex">
+            <Button>Browse products</Button>
+          </Link>
+        </div>
+      </PageContainer>
+    );
+  }
+
   async function applyCoupon() {
     const code = couponCode.trim().toUpperCase();
     if (!code) {
@@ -582,6 +586,7 @@ export function CheckoutPage() {
         setAppliedCoupon(null);
         setCouponError(result.error);
         setQuoteKey("");
+        setQuoteError("");
         return;
       }
       setAppliedCoupon({ code: result.code, discountPaise: result.discountPaise });
@@ -589,6 +594,7 @@ export function CheckoutPage() {
       setPaymentOrder(null);
       setPaymentError("");
       setQuoteKey("");
+      setQuoteError("");
     } catch {
       setAppliedCoupon(null);
       setCouponError("Unable to validate this coupon right now.");
