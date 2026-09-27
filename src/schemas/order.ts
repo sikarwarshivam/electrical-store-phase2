@@ -34,6 +34,23 @@ const checkoutCartItemSchema = z.object({
   unitPricePaise: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
 });
 
+export const checkoutQuoteSchema = z.object({
+  items: z.array(checkoutCartItemSchema).min(1).max(100),
+  pincode: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Please enter a valid 6-digit pincode."),
+  couponCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .max(40, "Coupon code is too long.")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type CheckoutQuoteInput = z.infer<typeof checkoutQuoteSchema>;
+
 export const createPaymentOrderSchema = z.object({
   checkoutId: z
     .string()
