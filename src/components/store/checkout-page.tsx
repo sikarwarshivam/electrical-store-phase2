@@ -395,18 +395,6 @@ export function CheckoutPage() {
     setSubmitted(false);
     setPaymentOrder(null);
     setPaymentError("");
-    if (field === "pincode") {
-      setQuote(null);
-      setQuoteError("");
-    }
-  }
-
-  function updateField(field: keyof AddressState, value: string) {
-    setAddress((current) => ({ ...current, [field]: value }));
-    setSelectedSavedAddressId("");
-    setSubmitted(false);
-    setPaymentOrder(null);
-    setPaymentError("");
   }
 
   async function submitPayment(event: FormEvent<HTMLFormElement>) {
@@ -554,22 +542,6 @@ export function CheckoutPage() {
       </PageContainer>
     );
   }
-
-  const cartVerified =
-    verifiedSignature === signature &&
-    lines.length === items.length &&
-    issues.length === 0;
-
-  const addressComplete =
-    address.fullName.trim().length >= 2 &&
-    validPhone(address.phone) &&
-    validPincode(address.pincode) &&
-    address.house.trim().length >= 1 &&
-    address.street.trim().length >= 2 &&
-    address.city.trim().length >= 2 &&
-    address.state.trim().length >= 2;
-
-  const continueDisabled = loading || !cartVerified || !addressComplete;
 
   async function applyCoupon() {
     const code = couponCode.trim().toUpperCase();
