@@ -18,63 +18,7 @@ import {
 import { reconcileCartAction } from "@/actions/cart";
 import type { IOrderLine } from "@/models/Order";
 import { sendOrderPlacedEmail, sendOrderStatusEmail } from "@/lib/order-notifications";
-
-function parseConfiguredPaise(name: string, fallback = 0) {
-  const raw = process.env[name]?.trim();
-  if (!raw) return fallback;
-
-  const value = Number(raw);
-  if (!Number.isSafeInteger(value) || value < 0) {
-    throw new Error(name + " must be a non-negative integer in paise.");
-  }
-
-  return value;
-}
-
-function getReservationMinutes() {
-  const raw = process.env.PAYMENT_RESERVATION_MINUTES?.trim();
-  if (!raw) return 10;
-
-  const value = Number(raw);
-  if (!Number.isInteger(value) || value < 5 || value > 30) {
-    throw new Error("PAYMENT_RESERVATION_MINUTES must be an integer from 5 to 30.");
-  }
-
-  return value;
-}
-
-function calculateTax(
-  subtotalPaise: number,
-  gstRate: number | undefined,
-  isGstInclusive: boolean
-) {
-  if (!gstRate || gstRate <= 0) {
-    return {
-      taxPaise: 0,
-      taxIncludedPaise: 0,
-      taxAddedPaise: 0,
-    };
-  }
-
-  if (isGstInclusive) {
-    const taxPaise = Math.round(
-      (subtotalPaise * gstRate) / (100 + gstRate)
-    );
-    return {
-      taxPaise,
-      taxIncludedPaise: taxPaise,
-      taxAddedPaise: 0,
-    };
-  }
-
-  const taxPaise = Math.round((subtotalPaise * gstRate) / 100);
-  return {
-    taxPaise,
-    taxIncludedPaise: 0,
-    taxAddedPaise: taxPaise,
-  };
-}
-
+import { calculateShipping, calculateTax, parseConfiguredPaise } from "@/lib/checkout-pricing";
 
 const ADMIN_ORDER_TRANSITIONS: Record<string, string[]> = {
   PLACED: ["CONFIRMED"],
@@ -264,7 +208,8 @@ export async function createPaymentOrderAction(
     const taxPaise = lines.reduce((total, line) => total + line.taxPaise, 0);
     const taxIncludedPaise = lines.reduce((total, line) => total + line.taxIncludedPaise, 0);
     const taxAddedPaise = lines.reduce((total, line) => total + line.taxAddedPaise, 0);
-    const shippingPaise = parseConfiguredPaise("SHIPPING_FLAT_RATE_PAISE", 0);
+    const shipping = calculateShipping(subtotalPaise);
+    const shippingPaise = shipping.shippingPaise;
     let discountPaise = 0;
     let appliedCouponCode: string | undefined;
 
