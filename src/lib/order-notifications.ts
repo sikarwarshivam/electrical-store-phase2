@@ -311,7 +311,7 @@ export async function sendRefundProcessedEmail(order: OrderEmailData) {
       "</div>" +
       '<div style="margin-top:18px;"><a href="' +
       escapeHtml(orderUrl(order.orderNumber)) +
-      '" style="display:inline-block;padding:10px 14px;border-radius:8px;background:#171717;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;">View order</a></div>"
+      '" style="display:inline-block;padding:10px 14px;border-radius:8px;background:#171717;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;">View order</a></div>"'
   );
 
   const text =

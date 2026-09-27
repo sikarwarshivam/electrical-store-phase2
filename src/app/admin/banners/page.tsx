@@ -165,7 +165,7 @@ export default async function AdminBannersPage({
                 <Card key={String(banner._id)}>
                   <CardContent className="p-5">
                     <div className="grid gap-4 lg:grid-cols-[180px_1fr_auto] lg:items-start">
-                      <div className="aspect-[16/9] overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900">
+                      <div className="aspect-video overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900">
                         <img
                           src={banner.imageUrl}
                           alt={banner.title}
