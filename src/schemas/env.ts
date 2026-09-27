@@ -37,6 +37,10 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().optional(),
   EMAIL_REPLY_TO: z.string().optional(),
   EMAIL_NOTIFICATIONS_ENABLED: z.enum(["true", "false"]).optional(),
+
+  // Checkout and delivery configuration (amounts in paise)
+  SHIPPING_FLAT_RATE_PAISE: z.string().optional(),
+  SHIPPING_FREE_THRESHOLD_PAISE: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
