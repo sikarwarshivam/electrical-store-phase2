@@ -383,6 +383,9 @@ export function CheckoutPage() {
     return () => {
       active = false;
     };
+  // The cart contents are represented by the stable signature; reusing the
+  // same checkout payload for metadata-only cart changes is unnecessary.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appliedCoupon?.code, cartVerified, isHydrated, quotePincode, signature]);
 
   const continueDisabled =
