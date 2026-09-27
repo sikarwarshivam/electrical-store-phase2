@@ -183,8 +183,8 @@ export default async function AdminSettingsPage({
                     ))}
                   </div>
                   <p className="mt-2 text-xs text-neutral-500">
-                    Checkout will not use these values until serviceability and
-                    delivery policy rules are connected in the commerce flow.
+                    Checkout uses these settings to select self-delivery or courier pricing and
+                    the applicable self-delivery distance slab.
                   </p>
                 </div>
 
@@ -240,6 +240,29 @@ export default async function AdminSettingsPage({
                 />
                 <p className="mt-1 text-xs text-neutral-500">
                   Leave empty until the owner confirms local serviceable pincodes.
+                </p>
+              </div>
+
+              <div className="mt-5">
+                <label
+                  htmlFor="self-delivery-pincode-distances"
+                  className="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+                >
+                  Self-delivery pincode distances
+                </label>
+                <textarea
+                  id="self-delivery-pincode-distances"
+                  name="selfDeliveryPincodeDistances"
+                  rows={8}
+                  defaultValue={settings.delivery.serviceability.selfDeliveryPincodeDistances
+                    .map((entry) => entry.pincode + "=" + entry.distanceKm)
+                    .join("\n")}
+                  placeholder={"250001=2.5\n250002=4\n250003=6.5"}
+                  className="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                />
+                <p className="mt-1 text-xs text-neutral-500">
+                  Map each self-delivery pincode to the configured distance in km.
+                  Use one entry per line in the format pincode=distanceKm.
                 </p>
               </div>
 
