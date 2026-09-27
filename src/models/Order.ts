@@ -66,6 +66,8 @@ export interface IOrderLine {
   unitPricePaise: number;
   mrpPaise: number;
   subtotalPaise: number;
+  discountPaise: number;
+  taxablePaise: number;
   hsnCode?: string;
   gstRate?: number;
   taxIncluded: boolean;
@@ -192,6 +194,8 @@ const OrderLineSchema = new Schema<IOrderLine>(
     unitPricePaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
     mrpPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
     subtotalPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
+    discountPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER, default: 0 },
+    taxablePaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
     hsnCode: { type: String, trim: true, maxlength: 20 },
     gstRate: { type: Number, min: 0, max: 100 },
     taxIncluded: { type: Boolean, required: true, default: true },
