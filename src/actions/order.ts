@@ -18,7 +18,7 @@ import {
 import { reconcileCartAction } from "@/actions/cart";
 import type { IOrderLine } from "@/models/Order";
 import { sendOrderPlacedEmail, sendOrderStatusEmail } from "@/lib/order-notifications";
-import { calculateShipping, calculateTax, parseConfiguredPaise } from "@/lib/checkout-pricing";
+import { calculateShipping, calculateTax } from "@/lib/checkout-pricing";
 
 const ADMIN_ORDER_TRANSITIONS: Record<string, string[]> = {
   PLACED: ["CONFIRMED"],
