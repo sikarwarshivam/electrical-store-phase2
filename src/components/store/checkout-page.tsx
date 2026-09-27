@@ -1029,6 +1029,7 @@ export function CheckoutPage() {
             <ArrowLeft className="mr-1.5 h-4 w-4" />
             Back to cart
           </Link>
+        </aside>
       </div>
     </PageContainer>
   );
