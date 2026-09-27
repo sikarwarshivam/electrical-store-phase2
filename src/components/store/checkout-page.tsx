@@ -200,8 +200,6 @@ export function CheckoutPage() {
     setPaymentError("");
     setAppliedCoupon(null);
     setCouponError("");
-    setQuote(null);
-    setQuoteError("");
   }
 
   const signature = useMemo(
@@ -590,7 +588,6 @@ export function CheckoutPage() {
       if (!result.success) {
         setAppliedCoupon(null);
         setCouponError(result.error);
-        setQuote(null);
         setQuoteError("");
         return;
       }
@@ -898,7 +895,6 @@ export function CheckoutPage() {
                   setCouponCode(event.target.value.toUpperCase().slice(0, 40));
                   setAppliedCoupon(null);
                   setCouponError("");
-                  setQuote(null);
                   setQuoteError("");
                   setPaymentOrder(null);
                 }}
