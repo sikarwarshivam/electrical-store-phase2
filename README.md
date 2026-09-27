@@ -95,6 +95,10 @@ The application strictly verifies required environment variables via `src/schema
 | `CLOUDINARY_API_SECRET` | Phase 2 | Cloudinary API secret | `placeholder_secret` |
 | `RAZORPAY_KEY_ID` | Phase 2 | Razorpay Key ID | `rzp_test_placeholder` |
 | `RAZORPAY_KEY_SECRET` | Phase 2 | Razorpay Secret Key | `placeholder_secret` |
+| `RESEND_API_KEY` | Optional | Resend API key for transactional email | `re_xxx...` |
+| `EMAIL_FROM` | Optional | Verified sender address used for order emails | `Store <orders@example.com>` |
+| `EMAIL_REPLY_TO` | Optional | Customer support reply-to address | `support@example.com` |
+| `EMAIL_NOTIFICATIONS_ENABLED` | Optional | Enable/disable order email delivery | `true` / `false` |
 
 > **Security Note**: Never commit `.env` or `.env.local` files to source control. They are strictly ignored by `.gitignore`.
 
@@ -345,7 +349,9 @@ Phase 2 deliberately does not implement:
 - Festival campaigns
 - Reviews
 - Warranty/return workflows
-- Notifications
+- Transactional email notifications
+
+Transactional email currently covers order placed, fulfilment status changes, cancellation, and processed refunds. Delivery uses the Resend Email API with idempotency keys so retried events do not intentionally create duplicate messages. Configure a verified sender before enabling it in production.
 
 ### Phase 9 — Production Hardening
 - SEO

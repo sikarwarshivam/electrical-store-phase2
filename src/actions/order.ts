@@ -17,6 +17,7 @@ import {
 } from "@/schemas/order";
 import { reconcileCartAction } from "@/actions/cart";
 import type { IOrderLine } from "@/models/Order";
+import { sendOrderPlacedEmail, sendOrderStatusEmail } from "@/lib/order-notifications";
 
 function parseConfiguredPaise(name: string, fallback = 0) {
   const raw = process.env[name]?.trim();
@@ -579,6 +580,14 @@ export async function verifyRazorpayPaymentAction(
       }
     );
 
+    const placedOrder = await Order.findById(order._id).lean();
+    if (placedOrder) {
+      await sendOrderPlacedEmail({
+        ...placedOrder,
+        id: placedOrder._id,
+      });
+    }
+
     return {
       success: true,
       orderId: order._id.toString(),
@@ -647,6 +656,11 @@ export async function updateOrderStatusAction(
       )
     );
     await order.save();
+
+    await sendOrderStatusEmail({
+      ...order.toObject(),
+      id: order._id,
+    }, parsed.data.note || undefined);
 
     redirect(
       "/admin/orders?updated=" +

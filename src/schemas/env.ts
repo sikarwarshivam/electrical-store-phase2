@@ -31,6 +31,12 @@ const envSchema = z.object({
   // Razorpay Architecture Placeholders (Optional in Phase 1)
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
+
+  // Transactional email notifications (Resend REST API)
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
+  EMAIL_REPLY_TO: z.string().optional(),
+  EMAIL_NOTIFICATIONS_ENABLED: z.enum(["true", "false"]).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
