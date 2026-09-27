@@ -18,18 +18,11 @@ import {
 import { reconcileCartAction } from "@/actions/cart";
 import type { IOrderLine } from "@/models/Order";
 import { sendOrderPlacedEmail, sendOrderStatusEmail } from "@/lib/order-notifications";
-
-function parseConfiguredPaise(name: string, fallback = 0) {
-  const raw = process.env[name]?.trim();
-  if (!raw) return fallback;
-
-  const value = Number(raw);
-  if (!Number.isSafeInteger(value) || value < 0) {
-    throw new Error(name + " must be a non-negative integer in paise.");
-  }
-
-  return value;
-}
+import { getStoreSettings } from "@/actions/store-settings";
+import {
+  calculateDeliveryQuote,
+  calculateDiscountedTaxLines,
+} from "@/lib/checkout-pricing";
 
 function getReservationMinutes() {
   const raw = process.env.PAYMENT_RESERVATION_MINUTES?.trim();
@@ -42,39 +35,6 @@ function getReservationMinutes() {
 
   return value;
 }
-
-function calculateTax(
-  subtotalPaise: number,
-  gstRate: number | undefined,
-  isGstInclusive: boolean
-) {
-  if (!gstRate || gstRate <= 0) {
-    return {
-      taxPaise: 0,
-      taxIncludedPaise: 0,
-      taxAddedPaise: 0,
-    };
-  }
-
-  if (isGstInclusive) {
-    const taxPaise = Math.round(
-      (subtotalPaise * gstRate) / (100 + gstRate)
-    );
-    return {
-      taxPaise,
-      taxIncludedPaise: taxPaise,
-      taxAddedPaise: 0,
-    };
-  }
-
-  const taxPaise = Math.round((subtotalPaise * gstRate) / 100);
-  return {
-    taxPaise,
-    taxIncludedPaise: 0,
-    taxAddedPaise: taxPaise,
-  };
-}
-
 
 const ADMIN_ORDER_TRANSITIONS: Record<string, string[]> = {
   PLACED: ["CONFIRMED"],
@@ -227,14 +187,9 @@ export async function createPaymentOrderAction(
       .lean();
     const productMap = new Map(products.map((product) => [String(product._id), product]));
 
-    const lines = reconciliation.lines.map((line) => {
+    const baseLines = reconciliation.lines.map((line) => {
       const product = productMap.get(line.productId!);
       const subtotalPaise = line.unitPricePaise! * line.quantity;
-      const tax = calculateTax(
-        subtotalPaise,
-        product?.tax?.gstRate,
-        product?.tax?.isGstInclusive ?? true
-      );
 
       return {
         product: new mongoose.Types.ObjectId(line.productId!),
@@ -253,29 +208,71 @@ export async function createPaymentOrderAction(
         hsnCode: product?.tax?.hsnCode,
         gstRate: product?.tax?.gstRate,
         taxIncluded: product?.tax?.isGstInclusive ?? true,
-        taxPaise: tax.taxPaise,
-        lineTotalPaise: subtotalPaise + tax.taxAddedPaise,
-        taxIncludedPaise: tax.taxIncludedPaise,
-        taxAddedPaise: tax.taxAddedPaise,
       };
     });
 
-    const subtotalPaise = lines.reduce((total, line) => total + line.subtotalPaise, 0);
-    const taxPaise = lines.reduce((total, line) => total + line.taxPaise, 0);
-    const taxIncludedPaise = lines.reduce((total, line) => total + line.taxIncludedPaise, 0);
-    const taxAddedPaise = lines.reduce((total, line) => total + line.taxAddedPaise, 0);
-    const shippingPaise = parseConfiguredPaise("SHIPPING_FLAT_RATE_PAISE", 0);
+    const subtotalPaise = baseLines.reduce(
+      (total, line) => total + line.subtotalPaise,
+      0
+    );
+
     let discountPaise = 0;
     let appliedCouponCode: string | undefined;
 
     if (couponCode) {
       const couponResult = await calculateCouponDiscount(couponCode, subtotalPaise);
-      if (!couponResult.success) return { success: false, error: couponResult.error };
+      if (!couponResult.success) {
+        return { success: false, error: couponResult.error };
+      }
+
       const reserved = await reserveCouponUsage(couponResult.code);
-      if (!reserved) return { success: false, error: "This coupon is no longer available. Please try again." };
+      if (!reserved) {
+        return {
+          success: false,
+          error: "This coupon is no longer available. Please try again.",
+        };
+      }
+
       discountPaise = couponResult.discountPaise;
       appliedCouponCode = couponResult.code;
     }
+
+    const qualifyingOrderValuePaise = Math.max(
+      0,
+      subtotalPaise - discountPaise
+    );
+    const storeSettings = await getStoreSettings();
+    const deliveryQuote = calculateDeliveryQuote(
+      storeSettings,
+      address.pincode,
+      qualifyingOrderValuePaise
+    );
+
+    if (!deliveryQuote.success) {
+      if (appliedCouponCode) {
+        await releaseCouponUsage(appliedCouponCode);
+      }
+      return {
+        success: false,
+        error: deliveryQuote.error,
+      };
+    }
+
+    const shippingPaise = deliveryQuote.shippingPaise;
+    const pricedLines = calculateDiscountedTaxLines(baseLines, discountPaise);
+
+    const taxPaise = pricedLines.reduce(
+      (total, line) => total + line.taxPaise,
+      0
+    );
+    const taxIncludedPaise = pricedLines.reduce(
+      (total, line) => total + line.taxIncludedPaise,
+      0
+    );
+    const taxAddedPaise = pricedLines.reduce(
+      (total, line) => total + line.taxAddedPaise,
+      0
+    );
     const grandTotalPaise =
       subtotalPaise - discountPaise + shippingPaise + taxAddedPaise;
 
@@ -298,18 +295,26 @@ export async function createPaymentOrderAction(
         : undefined;
     const customerEmail = address.email || user?.email || undefined;
 
-    const orderItems = lines.map((line) => {
-      const orderLine = {
-        ...line,
-      } as IOrderLine & {
-        taxIncludedPaise?: number;
-        taxAddedPaise?: number;
-      };
-
-      delete orderLine.taxIncludedPaise;
-      delete orderLine.taxAddedPaise;
-      return orderLine;
-    });
+    const orderItems = pricedLines.map((line) => ({
+      product: line.product,
+      variant: line.variant,
+      sku: line.sku,
+      productName: line.productName,
+      variantTitle: line.variantTitle,
+      imageUrl: line.imageUrl,
+      unitOfSale: line.unitOfSale,
+      quantity: line.quantity,
+      unitPricePaise: line.unitPricePaise,
+      mrpPaise: line.mrpPaise,
+      subtotalPaise: line.subtotalPaise,
+      discountPaise: line.discountPaise,
+      taxablePaise: line.taxablePaise,
+      hsnCode: line.hsnCode,
+      gstRate: line.gstRate,
+      taxIncluded: line.taxIncluded,
+      taxPaise: line.taxPaise,
+      lineTotalPaise: line.lineTotalPaise,
+    }));
 
     const order = new Order({
       orderNumber: createOrderNumber(),
