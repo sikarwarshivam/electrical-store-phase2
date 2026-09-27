@@ -21,6 +21,10 @@ import {
   verifyRazorpayPaymentAction,
   type CreatePaymentOrderResult,
 } from "@/actions/order";
+import {
+  getCheckoutQuoteAction,
+  type CheckoutQuoteResult,
+} from "@/actions/checkout";
 import type { CartReconcileLine } from "@/actions/cart";
 import { useCart } from "@/hooks/use-cart";
 import { formatINRFromPaise } from "@/lib/money";
@@ -169,6 +173,10 @@ export function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPaise: number } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
+  const [quote, setQuote] = useState<
+    Extract<CheckoutQuoteResult, { success: true }> | null
+  >(null);
+  const [quoteError, setQuoteError] = useState("");
 
   function isAddressBlank(value: AddressState) {
     return !Object.values(value).some((field) => field.trim());
@@ -192,6 +200,8 @@ export function CheckoutPage() {
     setPaymentError("");
     setAppliedCoupon(null);
     setCouponError("");
+    setQuote(null);
+    setQuoteError("");
   }
 
   const signature = useMemo(
@@ -211,6 +221,8 @@ export function CheckoutPage() {
     async function reconcileCheckout() {
       setPaymentOrder(null);
       setPaymentError("");
+      setQuote(null);
+      setQuoteError("");
       setLoading(true);
       setIssues([]);
 
@@ -238,6 +250,8 @@ export function CheckoutPage() {
           },
         ]);
         setVerifiedSignature("");
+        setQuote(null);
+        setQuoteError("");
       } finally {
         if (active) setLoading(false);
       }
@@ -313,6 +327,79 @@ export function CheckoutPage() {
     0
   );
 
+  const cartVerified =
+    verifiedSignature === signature &&
+    lines.length === items.length &&
+    issues.length === 0;
+
+  const addressComplete =
+    address.fullName.trim().length >= 2 &&
+    validPhone(address.phone) &&
+    validPincode(address.pincode) &&
+    address.house.trim().length >= 1 &&
+    address.street.trim().length >= 2 &&
+    address.city.trim().length >= 2 &&
+    address.state.trim().length >= 2;
+
+  const quotePincode = validPincode(address.pincode) ? address.pincode : "";
+
+  useEffect(() => {
+    if (!isHydrated || !cartVerified) return;
+
+    let active = true;
+
+    async function loadQuote() {
+      try {
+        const result = await getCheckoutQuoteAction({
+          items: items.map((item) => ({
+            variantId: item.variantId,
+            quantity: item.quantity,
+            unitPricePaise: item.unitPricePaise,
+          })),
+          couponCode: appliedCoupon?.code || "",
+        });
+
+        if (!active) return;
+
+        if (!result.success) {
+          setQuote(null);
+          setQuoteError(result.error);
+          return;
+        }
+
+        setQuote(result);
+        setQuoteError("");
+      } catch {
+        if (!active) return;
+        setQuote(null);
+        setQuoteError(
+          "Unable to calculate the checkout total right now. Please try again."
+        );
+      }
+    }
+
+    void loadQuote();
+
+    return () => {
+      active = false;
+    };
+  }, [appliedCoupon?.code, cartVerified, isHydrated, quotePincode, signature]);
+
+  const continueDisabled =
+    loading || !cartVerified || !addressComplete || !quote || Boolean(quoteError);
+
+  function updateField(field: keyof AddressState, value: string) {
+    setAddress((current) => ({ ...current, [field]: value }));
+    setSelectedSavedAddressId("");
+    setSubmitted(false);
+    setPaymentOrder(null);
+    setPaymentError("");
+    if (field === "pincode") {
+      setQuote(null);
+      setQuoteError("");
+    }
+  }
+
   function updateField(field: keyof AddressState, value: string) {
     setAddress((current) => ({ ...current, [field]: value }));
     setSelectedSavedAddressId("");
@@ -326,7 +413,7 @@ export function CheckoutPage() {
     setSubmitted(true);
     setPaymentError("");
 
-    if (!addressComplete || !cartVerified || loading) return;
+    if (!addressComplete || !cartVerified || loading || !quote) return;
 
     setPaymentLoading(true);
 
@@ -349,6 +436,22 @@ export function CheckoutPage() {
 
       if (!order.success) {
         setPaymentError(order.error);
+        return;
+      }
+
+      if (
+        order.amountPaise !== quote.grandTotalPaise ||
+        order.subtotalPaise !== quote.subtotalPaise ||
+        order.shippingPaise !== quote.shippingPaise ||
+        order.taxPaise !== quote.taxPaise ||
+        order.discountPaise !== quote.discountPaise
+      ) {
+        setPaymentOrder(null);
+        setQuote(null);
+        setQuoteError(
+          "The order total changed before payment. We refreshed the total; please review it and continue again."
+        );
+        setPaymentError("");
         return;
       }
 
@@ -484,12 +587,16 @@ export function CheckoutPage() {
       if (!result.success) {
         setAppliedCoupon(null);
         setCouponError(result.error);
+        setQuote(null);
+        setQuoteError("");
         return;
       }
       setAppliedCoupon({ code: result.code, discountPaise: result.discountPaise });
       setCouponCode(result.code);
       setPaymentOrder(null);
       setPaymentError("");
+      setQuote(null);
+      setQuoteError("");
     } catch {
       setAppliedCoupon(null);
       setCouponError("Unable to validate this coupon right now.");
@@ -739,34 +846,47 @@ export function CheckoutPage() {
         </form>
 
         <aside className="h-fit rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-950 lg:sticky lg:top-24">
-          <h2 className="text-base font-bold">Order summary</h2>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-base font-bold">Order summary</h2>
+              <p className="mt-1 text-xs text-neutral-500">
+                Taxes and delivery are calculated from current store rules.
+              </p>
+            </div>
+            {quote ? (
+              <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                Live total
+              </span>
+            ) : null}
+          </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
             {lines.map((line) => (
               <div
                 key={line.variantId}
-                className="flex justify-between gap-4 text-sm"
+                className="flex justify-between gap-4 p-3 text-sm"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium">
                     {line.title || line.sku}
                   </p>
-                  <p className="text-xs text-neutral-500">
-                    Qty {line.quantity}
+                  <p className="mt-0.5 text-xs text-neutral-500">
+                    {line.quantity} ×{" "}
+                    {line.unitPricePaise !== undefined
+                      ? formatINRFromPaise(line.unitPricePaise)
+                      : "—"}
                   </p>
                 </div>
                 <span className="shrink-0 font-semibold">
                   {line.unitPricePaise !== undefined
-                    ? formatINRFromPaise(
-                        line.unitPricePaise * line.quantity
-                      )
+                    ? formatINRFromPaise(line.unitPricePaise * line.quantity)
                     : "—"}
                 </span>
               </div>
             ))}
           </div>
 
-          <div className="mt-5 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
+          <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
             <p className="text-sm font-semibold">Coupon</p>
             <div className="mt-2 flex gap-2">
               <input
@@ -775,77 +895,161 @@ export function CheckoutPage() {
                   setCouponCode(event.target.value.toUpperCase().slice(0, 40));
                   setAppliedCoupon(null);
                   setCouponError("");
+                  setQuote(null);
+                  setQuoteError("");
                   setPaymentOrder(null);
                 }}
                 placeholder="Enter coupon code"
                 maxLength={40}
                 className="h-10 min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-3 text-sm uppercase outline-none focus:border-amber-500 dark:border-neutral-700 dark:bg-neutral-950"
               />
-              <Button type="button" variant="outline" onClick={() => void applyCoupon()} disabled={couponLoading || !cartVerified}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void applyCoupon()}
+                disabled={couponLoading || !cartVerified}
+              >
                 {couponLoading ? "Checking..." : appliedCoupon ? "Applied" : "Apply"}
               </Button>
             </div>
-            {appliedCoupon ? <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">Coupon {appliedCoupon.code} applied.</p> : null}
-            {couponError ? <p className="mt-2 text-xs font-medium text-red-600">{couponError}</p> : null}
-          </div>
-
-          <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-neutral-800">
-            <div className="flex justify-between text-sm">
-              <span className="text-neutral-500">Subtotal</span>
-              <span className="font-semibold">
-                {formatINRFromPaise(
-                  paymentOrder?.subtotalPaise ?? subtotalPaise
-                )}
-              </span>
-            </div>
             {appliedCoupon ? (
-              <div className="mt-2 flex justify-between text-sm">
-                <span className="text-neutral-500">Discount</span>
-                <span className="font-semibold text-emerald-700 dark:text-emerald-400">- {formatINRFromPaise(appliedCoupon.discountPaise)}</span>
-              </div>
+              <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                Coupon {appliedCoupon.code} applied.
+              </p>
             ) : null}
-            <div className="mt-2 flex justify-between text-sm">
-              <span className="text-neutral-500">Shipping</span>
-              <span className="font-semibold">
-                {paymentOrder
-                  ? formatINRFromPaise(paymentOrder.shippingPaise)
-                  : "Calculated securely"}
-              </span>
-            </div>
-            <div className="mt-2 flex justify-between text-sm">
-              <span className="text-neutral-500">Tax</span>
-              <span className="font-semibold">
-                {paymentOrder
-                  ? formatINRFromPaise(paymentOrder.taxPaise)
-                  : "Calculated securely"}
-              </span>
-            </div>
-            <div className="mt-4 flex justify-between border-t border-neutral-200 pt-4 text-base dark:border-neutral-800">
-              <span className="font-bold">Grand total</span>
-              <span className="font-bold">
-                {formatINRFromPaise(
-                  paymentOrder?.amountPaise ??
-                    (subtotalPaise - (appliedCoupon?.discountPaise ?? 0))
-                )}
-              </span>
-            </div>
-            {paymentOrder ? (
-              <p className="mt-3 text-xs text-neutral-500">
-                Payment order {paymentOrder.razorpayOrderId} is reserved until{" "}
-                {new Date(paymentOrder.reservationExpiresAt).toLocaleTimeString(
-                  "en-IN",
-                  { hour: "2-digit", minute: "2-digit" }
-                )}
-                .
+            {couponError ? (
+              <p className="mt-2 text-xs font-medium text-red-600">
+                {couponError}
               </p>
             ) : null}
           </div>
 
+          <div className="mt-5 border-t border-neutral-200 pt-4">
+            {!cartVerified ? (
+              <div className="space-y-2">
+                <div className="h-4 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+                <div className="h-4 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+                <div className="h-7 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+              </div>
+            ) : quote ? (
+              <div className="space-y-2.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-neutral-500">MRP total</span>
+                  <span className="font-medium">
+                    {formatINRFromPaise(quote.mrpSubtotalPaise)}
+                  </span>
+                </div>
+                {quote.productSavingsPaise > 0 ? (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-neutral-500">Product savings</span>
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                      - {formatINRFromPaise(quote.productSavingsPaise)}
+                    </span>
+                  </div>
+                ) : null}
+                <div className="flex justify-between text-sm">
+                  <span className="text-neutral-500">Subtotal</span>
+                  <span className="font-semibold">
+                    {formatINRFromPaise(quote.subtotalPaise)}
+                  </span>
+                </div>
+                {quote.discountPaise > 0 ? (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-neutral-500">
+                      Coupon {quote.couponCode ? "(" + quote.couponCode + ")" : ""}
+                    </span>
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                      - {formatINRFromPaise(quote.discountPaise)}
+                    </span>
+                  </div>
+                ) : null}
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-neutral-500">Delivery</span>
+                  <span className="font-semibold">
+                    {quote.shippingPaise === 0
+                      ? "FREE"
+                      : formatINRFromPaise(quote.shippingPaise)}
+                  </span>
+                </div>
+
+                {quote.taxIncludedPaise > 0 ? (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-neutral-500">GST (included)</span>
+                    <span className="font-semibold">
+                      {formatINRFromPaise(quote.taxIncludedPaise)}
+                    </span>
+                  </div>
+                ) : null}
+
+                {quote.taxAddedPaise > 0 ? (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-neutral-500">GST</span>
+                    <span className="font-semibold">
+                      {formatINRFromPaise(quote.taxAddedPaise)}
+                    </span>
+                  </div>
+                ) : null}
+
+                {quote.freeShippingThresholdPaise > 0 &&
+                quote.shippingPaise > 0 &&
+                quote.subtotalPaise < quote.freeShippingThresholdPaise ? (
+                  <p className="rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+                    Add{" "}
+                    {formatINRFromPaise(
+                      quote.freeShippingThresholdPaise - quote.subtotalPaise
+                    )}{" "}
+                    more to unlock free delivery.
+                  </p>
+                ) : null}
+
+                <div className="flex justify-between border-t border-neutral-200 pt-3 text-base dark:border-neutral-800">
+                  <span className="font-bold">Grand total</span>
+                  <span className="font-bold">
+                    {formatINRFromPaise(quote.grandTotalPaise)}
+                  </span>
+                </div>
+
+                {quote.productSavingsPaise + quote.discountPaise > 0 ? (
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                    You save{" "}
+                    {formatINRFromPaise(
+                      quote.productSavingsPaise + quote.discountPaise
+                    )}{" "}
+                    on this order.
+                  </p>
+                ) : null}
+              </div>
+            ) : quoteError ? (
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-900 dark:bg-red-950/20 dark:text-red-200">
+                {quoteError}
+              </div>
+            ) : (
+              <p className="text-sm text-neutral-500">
+                Calculating your final total…
+              </p>
+            )}
+          </div>
+
           <div className="mt-4 flex items-start gap-2 text-xs text-neutral-500">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-            Final payment amount and stock are verified on the server before
-            the payment order is created.
+            <span>
+              The displayed total is calculated from server-side prices, tax,
+              discount, and delivery rules. Payment is revalidated again before
+              Razorpay is opened.
+            </span>
           </div>
+
+          {paymentOrder ? (
+            <p className="mt-3 text-xs text-neutral-500">
+              Payment order {paymentOrder.razorpayOrderId} is reserved until{" "}
+              {new Date(paymentOrder.reservationExpiresAt).toLocaleTimeString(
+                "en-IN",
+                { hour: "2-digit", minute: "2-digit" }
+              )}
+              .
+            </p>
+          ) : null}
 
           <Link
             href="/cart"
@@ -854,7 +1058,6 @@ export function CheckoutPage() {
             <ArrowLeft className="mr-1.5 h-4 w-4" />
             Back to cart
           </Link>
-        </aside>
       </div>
     </PageContainer>
   );
