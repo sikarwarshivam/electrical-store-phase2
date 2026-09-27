@@ -60,12 +60,10 @@ export function PromoBannerCarousel({
   const touchStartX = useRef<number | null>(null);
 
   const hasMultiple = banners.length > 1;
-
-  useEffect(() => {
-    setActiveIndex((current) =>
-      Math.min(current, Math.max(0, banners.length - 1))
-    );
-  }, [banners.length]);
+  const safeActiveIndex = Math.min(
+    activeIndex,
+    Math.max(0, banners.length - 1)
+  );
 
   useEffect(() => {
     if (!hasMultiple || isFocused) return;
@@ -84,11 +82,11 @@ export function PromoBannerCarousel({
   }
 
   function goNext() {
-    goTo(activeIndex + 1);
+    goTo(safeActiveIndex + 1);
   }
 
   function goPrevious() {
-    goTo(activeIndex - 1);
+    goTo(safeActiveIndex - 1);
   }
 
   function handleTouchStart(event: TouchEvent) {
@@ -148,7 +146,7 @@ export function PromoBannerCarousel({
         <div className="relative overflow-hidden rounded-xl">
           <div
             className="flex transition-transform duration-500 ease-out motion-reduce:transition-none"
-            style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+            style={{ transform: `translateX(-${safeActiveIndex * 100}%)` }}
             aria-live={isFocused ? "polite" : "off"}
           >
             {banners.map((item, index) => (
@@ -194,7 +192,7 @@ export function PromoBannerCarousel({
                 key={item.id}
                 type="button"
                 aria-label={`Show banner ${index + 1}`}
-                aria-current={index === activeIndex}
+                aria-current={index === safeActiveIndex}
                 onClick={() => goTo(index)}
                 className={
                   index === activeIndex
