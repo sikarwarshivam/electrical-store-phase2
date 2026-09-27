@@ -215,9 +215,9 @@ export default async function AdminSettingsPage({
                 Delivery Serviceability
               </CardTitle>
               <CardDescription>
-                Enter Indian 6-digit pincodes, one per line or separated by commas.
-                These lists are stored now and will be enforced by checkout when
-                delivery routing is connected.
+                Enter Indian 6-digit pincodes for self-delivery and courier coverage.
+                Self-delivery pincodes also need a distance mapping below so checkout
+                can select the correct distance slab.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-5 md:grid-cols-2">
