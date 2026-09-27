@@ -1,4 +1,26 @@
-import type { IStoreSettings } from "@/models/StoreSettings";
+type StoreDeliverySettings = {
+  delivery: {
+    selfDelivery: {
+      freeAboveOrderValuePaise: number;
+      distanceSlabs: Array<{
+        fromKm: number;
+        toKm: number;
+        feePaise: number;
+      }>;
+    };
+    courier: {
+      flatFeePaise: number;
+    };
+    serviceability: {
+      selfDeliveryPincodes: string[];
+      selfDeliveryPincodeDistances: Array<{
+        pincode: string;
+        distanceKm: number;
+      }>;
+      courierPincodes: string[];
+    };
+  };
+};
 
 export type DeliveryMethod = "SELF_DELIVERY" | "COURIER";
 
@@ -23,7 +45,7 @@ function normalizedPincode(value: string) {
 
 function findSelfDeliveryDistance(
   pincode: string,
-  settings: IStoreSettings | ReturnType<typeof normalizeStoreSettings>
+  settings: StoreDeliverySettings
 ) {
   return settings.delivery.serviceability.selfDeliveryPincodeDistances.find(
     (entry) => entry.pincode === pincode
@@ -49,12 +71,8 @@ function findDistanceSlab(
   return null;
 }
 
-function normalizeStoreSettings(settings: Awaited<ReturnType<() => IStoreSettings>>) {
-  return settings;
-}
-
 export function calculateDeliveryQuote(
-  settings: IStoreSettings | ReturnType<typeof normalizeStoreSettings>,
+  settings: StoreDeliverySettings,
   pincode: string,
   qualifyingOrderValuePaise: number
 ): DeliveryQuote {
