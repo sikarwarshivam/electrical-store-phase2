@@ -101,6 +101,10 @@ export type CreatePaymentOrderResult =
       amountPaise: number;
       subtotalPaise: number;
       shippingPaise: number;
+      deliveryMethod: "SELF_DELIVERY" | "COURIER";
+      deliveryLabel: string;
+      deliveryDistanceKm?: number;
+      freeDelivery: boolean;
       taxPaise: number;
       discountPaise: number;
       couponCode?: string;
@@ -141,6 +145,13 @@ export async function createPaymentOrderAction(
           amountPaise: existing.pricing.grandTotalPaise,
           subtotalPaise: existing.pricing.subtotalPaise,
           shippingPaise: existing.pricing.shippingPaise,
+          deliveryMethod: existing.pricing.deliveryMethod ?? "COURIER",
+          deliveryLabel:
+            existing.pricing.deliveryMethod === "SELF_DELIVERY"
+              ? "Local delivery"
+              : "Courier delivery",
+          deliveryDistanceKm: existing.pricing.deliveryDistanceKm,
+          freeDelivery: existing.pricing.shippingPaise === 0,
           taxPaise: existing.pricing.taxPaise,
           discountPaise: existing.pricing.discountPaise,
           couponCode: existing.pricing.couponCode,
@@ -337,6 +348,8 @@ export async function createPaymentOrderAction(
         discountPaise,
         couponCode: appliedCouponCode,
         shippingPaise,
+        deliveryMethod: deliveryQuote.method,
+        deliveryDistanceKm: deliveryQuote.distanceKm,
         taxPaise,
         taxIncludedPaise,
         taxAddedPaise,
@@ -414,6 +427,10 @@ export async function createPaymentOrderAction(
         amountPaise: grandTotalPaise,
         subtotalPaise,
         shippingPaise,
+        deliveryMethod: deliveryQuote.method,
+        deliveryLabel: deliveryQuote.label,
+        deliveryDistanceKm: deliveryQuote.distanceKm,
+        freeDelivery: deliveryQuote.freeDelivery,
         taxPaise,
         discountPaise,
         couponCode: appliedCouponCode,
