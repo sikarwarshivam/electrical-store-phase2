@@ -182,7 +182,7 @@ export function PredictiveSearch({ mobile = false }: PredictiveSearchProps) {
           }
           aria-autocomplete="list"
           aria-expanded={isOpen}
-          aria-controls="predictive-search-results"
+          aria-controls={`predictive-search-results-${mobile ? "mobile" : "desktop"}`}
         />
 
         <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
@@ -209,7 +209,7 @@ export function PredictiveSearch({ mobile = false }: PredictiveSearchProps) {
 
       {isOpen ? (
         <div
-          id="predictive-search-results"
+          id={`predictive-search-results-${mobile ? "mobile" : "desktop"}`}
           className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-2xl shadow-neutral-900/10 dark:border-neutral-800 dark:bg-neutral-950"
         >
           {suggestions.length > 0 ? (
@@ -261,8 +261,14 @@ export function PredictiveSearch({ mobile = false }: PredictiveSearchProps) {
               ))}
             </div>
           ) : (
-            <div className="px-4 py-5 text-sm text-neutral-500">
-              No exact product match yet. Try another word or SKU.
+            <div className="px-4 py-5">
+              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+                No close matches found.
+              </p>
+              <p className="mt-1 text-xs leading-5 text-neutral-500">
+                Check the spelling, try a shorter product name, or press Enter
+                to search the full catalog.
+              </p>
             </div>
           )}
 
