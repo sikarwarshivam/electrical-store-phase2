@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ChevronRight, Package, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { PageContainer } from "@/components/layout/page-container";
@@ -30,13 +31,30 @@ export async function generateMetadata({
     return { title: "Product not found" };
   }
 
+  const description =
+    product.shortDescription ||
+    product.description.slice(0, 160) ||
+    "Electrical product details, specifications, pricing, and stock information.";
+
   return {
     title: product.name,
-    description:
-      product.shortDescription ||
-      product.description.slice(0, 160) ||
-      "Electrical product details, specifications, pricing, and stock information.",
-  };
+    description,
+    alternates: {
+      canonical: "/products/" + product.slug,
+    },
+    openGraph: {
+      type: "website",
+      title: product.name,
+      description,
+      url: "/products/" + product.slug,
+      images: product.images.length > 0
+        ? product.images.map((image) => ({
+            url: image.url,
+            alt: image.alt || product.name,
+          }))
+        : undefined,
+    },
+  } satisfies Metadata;
 }
 
 export default async function ProductPage({
@@ -66,8 +84,52 @@ export default async function ProductPage({
     groupedAttributes.set(group, list);
   }
 
+  const offerPrices = product.variants.map((variant) => variant.pricePaise);
+  const availableVariants = product.variants.filter(
+    (variant) => variant.stockStatus !== "OUT_OF_STOCK"
+  );
+  const aggregateAvailability =
+    availableVariants.length === 0
+      ? "https://schema.org/OutOfStock"
+      : availableVariants.some((variant) => variant.stockStatus === "IN_STOCK")
+        ? "https://schema.org/InStock"
+        : "https://schema.org/LimitedAvailability";
+
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description:
+      product.shortDescription ||
+      product.description.slice(0, 500) ||
+      "Electrical product details and specifications.",
+    image: product.images.map((image) => image.url),
+    url: new URL("/products/" + product.slug, process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").toString(),
+    brand: product.brand
+      ? {
+          "@type": "Brand",
+          name: product.brand.name,
+        }
+      : undefined,
+    category: product.category.name,
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "INR",
+      lowPrice: (Math.min(...offerPrices) / 100).toFixed(2),
+      highPrice: (Math.max(...offerPrices) / 100).toFixed(2),
+      offerCount: product.variants.length,
+      availability: aggregateAvailability,
+    },
+  };
+
   return (
     <PageContainer>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <div className="space-y-8">
         <nav className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
           <Link href="/" className="hover:text-amber-700 dark:hover:text-amber-400">
