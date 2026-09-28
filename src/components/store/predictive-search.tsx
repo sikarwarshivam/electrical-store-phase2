@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import { ArrowRight, Search, X } from "lucide-react";
 import { formatINRFromPaise } from "@/lib/money";
 
@@ -32,8 +34,8 @@ export function PredictiveSearch({ mobile = false }: PredictiveSearchProps) {
   const [isOpen, setOpen] = useState(false);
   const [isLoading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -81,14 +83,14 @@ export function PredictiveSearch({ mobile = false }: PredictiveSearchProps) {
     };
   }, [query]);
 
-  function submitSearch(event?: FormEvent<HTMLFormElement>) {
-    event?.preventDefault();
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
     const trimmed = query.trim();
     if (!trimmed) return;
 
     setOpen(false);
-    formRef.current?.submit();
+    router.push("/products?q=" + encodeURIComponent(trimmed));
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -120,24 +122,19 @@ export function PredictiveSearch({ mobile = false }: PredictiveSearchProps) {
       event.preventDefault();
 
       if (activeIndex < suggestions.length) {
-        window.location.href = "/products/" + suggestions[activeIndex].slug;
+        router.push("/products/" + suggestions[activeIndex].slug);
       } else if (didYouMean) {
         setQuery(didYouMean);
-        window.setTimeout(() => formRef.current?.submit(), 0);
+        router.push("/products?q=" + encodeURIComponent(didYouMean));
       }
     }
-  }
-
-  function chooseSuggestion(slug: string) {
-    setOpen(false);
-    window.location.href = "/products/" + slug;
   }
 
   function acceptCorrection() {
     if (!didYouMean) return;
     setQuery(didYouMean);
     setOpen(false);
-    window.setTimeout(() => formRef.current?.submit(), 0);
+    router.push("/products?q=" + encodeURIComponent(didYouMean));
   }
 
   return (
