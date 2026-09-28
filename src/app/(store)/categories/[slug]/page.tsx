@@ -25,6 +25,18 @@ export async function generateMetadata({
     description:
       category.description ||
       "Browse " + category.name + " electrical products and related subcategories.",
+    alternates: {
+      canonical: "/categories/" + category.slug,
+    },
+    openGraph: {
+      type: "website",
+      title: category.name,
+      description:
+        category.description ||
+        "Browse " + category.name + " electrical products and related subcategories.",
+      url: "/categories/" + category.slug,
+      images: category.imageUrl ? [category.imageUrl] : undefined,
+    },
   };
 }
 
