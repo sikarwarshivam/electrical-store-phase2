@@ -473,6 +473,8 @@ type SearchCandidate = {
   sku?: string;
   title?: string;
   options?: Array<{ name?: string; value?: string }>;
+  categoryName?: string;
+  brandName?: string;
 };
 
 type SearchMatch = {
@@ -575,11 +577,13 @@ function scoreSearchCandidate(queryText: string, candidate: SearchCandidate): Om
   }
 
   const fields = [
-    { text: candidate.name || "", weight: 4 },
-    { text: candidate.title || "", weight: 3 },
-    { text: candidate.sku || "", weight: 3 },
-    { text: candidate.slug || "", weight: 2 },
-    { text: (candidate.searchKeywords || []).join(" "), weight: 3 },
+    { text: candidate.name || "", weight: 6 },
+    { text: candidate.title || "", weight: 4 },
+    { text: candidate.sku || "", weight: 4 },
+    { text: candidate.slug || "", weight: 3 },
+    { text: (candidate.searchKeywords || []).join(" "), weight: 4 },
+    { text: candidate.categoryName || "", weight: 4 },
+    { text: candidate.brandName || "", weight: 3 },
     { text: candidate.shortDescription || "", weight: 2 },
     { text: candidate.description || "", weight: 1 },
     {
@@ -668,9 +672,14 @@ async function findPublicSearchMatches(
     status: "ACTIVE",
     _id: { $in: allowedProductIds },
   })
-    .select("_id name slug shortDescription description searchKeywords attributes")
+    .populate("category", "name")
+    .populate("brand", "name")
+    .select("_id name slug shortDescription description searchKeywords attributes category brand")
     .limit(5000)
-    .lean()) as SearchCandidate[];
+    .lean()) as unknown as Array<SearchCandidate & {
+    category?: { name?: string };
+    brand?: { name?: string };
+  }>;
 
   const variantCandidates = (await ProductVariant.find({
     status: "ACTIVE",
@@ -683,7 +692,12 @@ async function findPublicSearchMatches(
   const scores = new Map<string, SearchMatch>();
 
   for (const candidate of productCandidates) {
-    const scored = scoreSearchCandidate(normalized, candidate);
+    const enrichedCandidate: SearchCandidate = {
+      ...candidate,
+      categoryName: candidate.category?.name,
+      brandName: candidate.brand?.name,
+    };
+    const scored = scoreSearchCandidate(normalized, enrichedCandidate);
     if (scored.score <= 0) continue;
 
     scores.set(stringId(candidate._id), {
@@ -710,6 +724,45 @@ async function findPublicSearchMatches(
       name: existing?.name || scored.name,
       fuzzy: Boolean(existing?.fuzzy || scored.fuzzy),
     });
+  }
+
+  // A second, deterministic pass catches ordinary multi-word searches even
+  // when the richer fuzzy candidate scoring has no result (for example
+  // "exhaust fans" against "Exhaust Fan 200mm").
+  if (scores.size === 0) {
+    const queryTokens = searchTokens(normalized);
+    const exactTokenConditions = queryTokens.map((token) => {
+      const regex = new RegExp(escapeRegex(token), "i");
+      return {
+        $or: [
+          { name: regex },
+          { slug: regex },
+          { shortDescription: regex },
+          { description: regex },
+          { searchKeywords: regex },
+        ],
+      };
+    });
+
+    if (exactTokenConditions.length > 0) {
+      const directCandidates = (await Product.find({
+        status: "ACTIVE",
+        _id: { $in: allowedProductIds },
+        $and: exactTokenConditions,
+      })
+        .select("_id name")
+        .limit(100)
+        .lean()) as SearchCandidate[];
+
+      for (const candidate of directCandidates) {
+        scores.set(stringId(candidate._id), {
+          id: stringId(candidate._id),
+          score: 250,
+          name: candidate.name || "",
+          fuzzy: false,
+        });
+      }
+    }
   }
 
   return Array.from(scores.values())
