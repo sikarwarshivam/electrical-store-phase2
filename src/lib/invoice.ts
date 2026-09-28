@@ -12,7 +12,7 @@ export type InvoiceResult =
   | { success: true; invoice: IOrderInvoice }
   | {
       success: false;
-      code: "NOT_CONFIGURED" | "INVALID_TAX_DATA" | "NOT_FOUND";
+      code: "NOT_CONFIGURED" | "INVALID_TAX_DATA" | "NOT_FOUND" | "NOT_READY";
       error: string;
     };
 
@@ -108,7 +108,7 @@ export async function ensureInvoiceForOrder(
       order.payment.status !== "CAPTURED") {
     return {
       success: false,
-      code: "NOT_FOUND",
+      code: "NOT_READY",
       error: "An invoice is available only for successfully paid orders.",
     };
   }
