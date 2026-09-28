@@ -43,19 +43,19 @@ export default async function CategoriesPage() {
                     </div>
                   )}
 
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950/60 via-neutral-950/5 to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-85" />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-neutral-950/25 to-transparent transition-opacity duration-300 group-hover:from-neutral-950/85" />
 
-                  <div className="absolute inset-x-0 bottom-0 p-4">
-                    <div className="flex items-end justify-between gap-3 text-white">
+                  <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+                    <div className="flex items-end justify-between gap-3 rounded-xl border border-white/15 bg-neutral-950/60 p-3 text-white shadow-lg shadow-black/10 backdrop-blur-md">
                       <div className="min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/75">
                           Electrical category
                         </p>
-                        <h2 className="mt-1 truncate text-lg font-bold">
+                        <h2 className="mt-1 truncate text-base font-bold tracking-tight text-white drop-shadow-sm sm:text-lg">
                           {category.name}
                         </h2>
                       </div>
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 backdrop-blur-md transition-transform duration-300 group-hover:translate-x-0.5 group-hover:bg-amber-600 group-hover:border-amber-500">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-md transition-all duration-300 group-hover:translate-x-0.5 group-hover:border-amber-500 group-hover:bg-amber-600">
                         <ArrowRight className="h-4 w-4" />
                       </span>
                     </div>
