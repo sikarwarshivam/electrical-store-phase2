@@ -92,7 +92,7 @@ export async function GET(request: Request) {
           (nameToken) =>
             singularQuery.length >= 4 &&
             distance(singularQuery, singular(nameToken)) <=
-              (singularQuery.length >= 7 ? 2 : 1)
+              (singularQuery.length >= 5 ? 2 : 1)
         );
         return nearMatch;
       });
