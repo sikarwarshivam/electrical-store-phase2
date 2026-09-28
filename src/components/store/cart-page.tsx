@@ -5,11 +5,15 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
+  Check,
+  ChevronRight,
   Minus,
   Plus,
   RefreshCw,
+  ShieldCheck,
   ShoppingBag,
   Trash2,
+  Truck,
 } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { Badge } from "@/components/ui/badge";
@@ -140,7 +144,7 @@ export function CartPage() {
         title="Shopping Cart"
         description="Review your selected electrical products."
       >
-        <div className="rounded-xl border border-neutral-200 bg-white p-10 text-center text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-950">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center text-sm text-neutral-500 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
           Loading cart…
         </div>
       </PageContainer>
@@ -153,13 +157,18 @@ export function CartPage() {
         title="Shopping Cart"
         description="Review your selected electrical products."
       >
-        <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-12 text-center dark:border-neutral-800 dark:bg-neutral-950">
-          <ShoppingBag className="mx-auto h-12 w-12 text-neutral-400" />
-          <h2 className="mt-4 text-lg font-bold">Your cart is empty</h2>
-          <p className="mt-1 text-sm text-neutral-500">
-            Browse the catalog and add products to continue.
+        <div className="mx-auto max-w-2xl rounded-2xl border border-neutral-200 bg-white px-6 py-14 text-center shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950/30">
+            <ShoppingBag className="h-7 w-7 text-amber-600" />
+          </div>
+          <h2 className="mt-5 text-xl font-bold text-neutral-950 dark:text-white">
+            Your cart is empty
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-neutral-500">
+            Browse the catalog, choose the electrical products you need, and
+            your selected items will appear here.
           </p>
-          <Link href="/products" className="mt-5 inline-flex">
+          <Link href="/products" className="mt-6 inline-flex">
             <Button>Browse products</Button>
           </Link>
         </div>
@@ -184,7 +193,14 @@ export function CartPage() {
 
   return (
     <PageContainer
-      title="Shopping Cart"
+      title={
+        <span className="flex flex-wrap items-center gap-2">
+          Shopping Cart
+          <span className="text-sm font-medium text-neutral-400">
+            ({itemCount} {itemCount === 1 ? "item" : "items"})
+          </span>
+        </span>
+      }
       description="Current price and stock are verified against the store catalog."
       actions={
         <Button
@@ -192,6 +208,7 @@ export function CartPage() {
           variant="outline"
           onClick={() => void reconcile()}
           isLoading={loading}
+          className="bg-white dark:bg-neutral-950"
         >
           <RefreshCw className="mr-1.5 h-4 w-4" />
           Refresh
@@ -199,219 +216,278 @@ export function CartPage() {
       }
     >
       {error ? (
-        <div className="mb-5 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/20 dark:text-red-200">
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/20 dark:text-red-200">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       ) : null}
 
       {reconciled.some((line) => line.priceChanged) ? (
-        <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+        <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
           One or more prices changed. The current store prices are now shown in
           your cart.
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-4">
-          {items.map((item) => {
-            const line = lineMap.get(item.variantId);
-            const step = line?.orderQuantityStep ?? 1;
-            const minimum = line?.minOrderQuantity ?? 1;
-            const quantity = line?.quantity ?? item.quantity;
-            const stockLimited =
-              line?.trackInventory === true &&
-              line.availableQuantity !== undefined;
-            const maxReached =
-              stockLimited &&
-              line.availableQuantity !== undefined &&
-              quantity + step > line.availableQuantity;
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section aria-labelledby="cart-items-heading">
+          <div className="mb-3 flex items-center justify-between">
+            <h2
+              id="cart-items-heading"
+              className="text-sm font-semibold text-neutral-900 dark:text-neutral-100"
+            >
+              Your items
+            </h2>
+            <span className="text-xs text-neutral-500">
+              Prices verified live
+            </span>
+          </div>
 
-            return (
-              <div
-                key={item.id}
-                className="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950"
-              >
-                <div className="flex gap-4">
-                  <div className="h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
-                    {item.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="h-full w-full object-contain p-2"
-                      />
-                    ) : (
-                      <ShoppingBag className="h-full w-full p-7 text-neutral-400" />
-                    )}
-                  </div>
+          <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+            {items.map((item, index) => {
+              const line = lineMap.get(item.variantId);
+              const step = line?.orderQuantityStep ?? 1;
+              const minimum = line?.minOrderQuantity ?? 1;
+              const quantity = line?.quantity ?? item.quantity;
+              const stockLimited =
+                line?.trackInventory === true &&
+                line.availableQuantity !== undefined;
+              const maxReached =
+                stockLimited &&
+                line.availableQuantity !== undefined &&
+                quantity + step > line.availableQuantity;
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <Link
-                          href={
-                            line?.productSlug
-                              ? "/products/" + line.productSlug
-                              : "/products"
-                          }
-                          className="font-semibold hover:text-amber-700 dark:hover:text-amber-400"
-                        >
-                          {line?.title || item.title}
-                        </Link>
-                        <p className="mt-1 text-xs text-neutral-500">
-                          SKU: {line?.sku ?? item.sku}
-                        </p>
-                        {line?.brand ? (
-                          <p className="mt-1 text-xs text-neutral-500">
-                            {line.brand}
+              return (
+                <div
+                  key={item.id}
+                  className={
+                    index === items.length - 1
+                      ? "p-5"
+                      : "border-b border-neutral-100 p-5 dark:border-neutral-900"
+                  }
+                >
+                  <div className="flex gap-4 sm:gap-5">
+                    <Link
+                      href={
+                        line?.productSlug
+                          ? "/products/" + line.productSlug
+                          : "/products"
+                      }
+                      className="group shrink-0"
+                      aria-label={line?.title || item.title}
+                    >
+                      <div className="h-24 w-24 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:h-28 sm:w-28">
+                        {item.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="h-full w-full object-contain p-2.5 transition-transform duration-300 group-hover:scale-[1.06]"
+                          />
+                        ) : (
+                          <ShoppingBag className="h-full w-full p-8 text-neutral-400" />
+                        )}
+                      </div>
+                    </Link>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <Link
+                            href={
+                              line?.productSlug
+                                ? "/products/" + line.productSlug
+                                : "/products"
+                            }
+                            className="line-clamp-2 text-sm font-semibold leading-5 text-neutral-950 transition-colors hover:text-amber-700 dark:text-white dark:hover:text-amber-400"
+                          >
+                            {line?.title || item.title}
+                          </Link>
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-500">
+                            <span>SKU: {line?.sku ?? item.sku}</span>
+                            {line?.brand ? <span>· {line.brand}</span> : null}
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 sm:text-right">
+                          <p className="font-bold text-neutral-950 dark:text-white">
+                            {line?.unitPricePaise !== undefined
+                              ? formatINRFromPaise(line.unitPricePaise)
+                              : formatINRFromPaise(item.unitPricePaise)}
                           </p>
-                        ) : null}
+                          <p className="mt-0.5 text-[11px] text-neutral-400">
+                            per{" "}
+                            {(
+                              line?.unitOfSale ?? item.unitOfSale
+                            ).toLowerCase()}
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="text-right">
-                        <p className="font-bold">
-                          {line?.unitPricePaise !== undefined
-                            ? formatINRFromPaise(line.unitPricePaise)
-                            : formatINRFromPaise(item.unitPricePaise)}
-                        </p>
-                        <p className="text-xs text-neutral-500">
-                          per{" "}
-                          {(
-                            line?.unitOfSale ?? item.unitOfSale
-                          ).toLowerCase()}
-                        </p>
-                      </div>
-                    </div>
-
-                    {line?.issues.length ? (
-                      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
-                        {line.issues.map((issue) => (
-                          <p key={issue}>• {issue}</p>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="mt-3">
-                        <Badge
-                          variant={
-                            line?.stockStatus === "IN_STOCK"
-                              ? "success"
-                              : line?.stockStatus === "LOW_STOCK"
-                                ? "warning"
-                                : "destructive"
-                          }
-                        >
+                      {line?.issues.length ? (
+                        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+                          {line.issues.map((issue) => (
+                            <p key={issue}>• {issue}</p>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                          <Check className="h-3.5 w-3.5" />
                           {line?.stockStatus === "LOW_STOCK"
                             ? "Low stock"
                             : line?.stockStatus === "OUT_OF_STOCK"
                               ? "Out of stock"
                               : "Available"}
-                        </Badge>
-                      </div>
-                    )}
+                        </div>
+                      )}
 
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex h-10 items-center rounded-md border border-neutral-300 dark:border-neutral-700">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateQuantity(
-                              item.id,
-                              roundQuantity(
-                                Math.max(minimum, quantity - step),
-                                step
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                        <div className="inline-flex h-9 items-center overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateQuantity(
+                                item.id,
+                                roundQuantity(
+                                  Math.max(minimum, quantity - step),
+                                  step
+                                )
                               )
-                            )
-                          }
-                          className="px-3 text-neutral-600 hover:text-neutral-950 dark:text-neutral-300 dark:hover:text-white"
-                          aria-label="Decrease quantity"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </button>
-
-                        <span className="w-16 text-center text-sm font-semibold">
-                          {formatQuantity(quantity, step)}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const next = roundQuantity(quantity + step, step);
-                            if (
-                              !stockLimited ||
-                              line?.availableQuantity === undefined ||
-                              next <= line.availableQuantity
-                            ) {
-                              updateQuantity(item.id, next);
                             }
-                          }}
-                          disabled={maxReached}
-                          className="px-3 text-neutral-600 hover:text-neutral-950 disabled:opacity-40 dark:text-neutral-300 dark:hover:text-white"
-                          aria-label="Increase quantity"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
-                      </div>
+                            className="inline-flex h-9 w-9 items-center justify-center text-neutral-600 transition-colors hover:bg-white hover:text-neutral-950 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => removeItem(item.id)}
-                      >
-                        <Trash2 className="mr-1.5 h-4 w-4" />
-                        Remove
-                      </Button>
+                          <span className="min-w-12 border-x border-neutral-200 px-2 text-center text-xs font-semibold text-neutral-900 dark:border-neutral-800 dark:text-white">
+                            {formatQuantity(quantity, step)}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = roundQuantity(quantity + step, step);
+                              if (
+                                !stockLimited ||
+                                line?.availableQuantity === undefined ||
+                                next <= line.availableQuantity
+                              ) {
+                                updateQuantity(item.id, next);
+                              }
+                            }}
+                            disabled={maxReached}
+                            className="inline-flex h-9 w-9 items-center justify-center text-neutral-600 transition-colors hover:bg-white hover:text-neutral-950 disabled:cursor-not-allowed disabled:opacity-40 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => removeItem(item.id)}
+                          className="h-9 px-2 text-xs text-neutral-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
+                        >
+                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                          Remove
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <aside className="h-fit rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-950 lg:sticky lg:top-24">
-          <h2 className="text-base font-bold">Order summary</h2>
-
-          <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="text-neutral-500">Items</span>
-            <span className="font-semibold">{itemCount}</span>
+              );
+            })}
           </div>
-
-          <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="text-neutral-500">Subtotal</span>
-            <span className="font-semibold">
-              {formatINRFromPaise(authoritativeSubtotal)}
-            </span>
-          </div>
-
-          <p className="mt-3 text-xs leading-5 text-neutral-500">
-            Shipping, tax, and the final payable amount will be recalculated
-            from server-side order data during checkout.
-          </p>
-
-          <Link
-            href={checkoutBlocked ? "#" : "/checkout"}
-            aria-disabled={checkoutBlocked}
-            className={
-              checkoutBlocked ? "pointer-events-none mt-5 block" : "mt-5 block"
-            }
-          >
-            <Button
-              className="w-full"
-              size="lg"
-              disabled={checkoutBlocked}
-            >
-              Proceed to checkout
-            </Button>
-          </Link>
 
           <Link
             href="/products"
-            className="mt-3 inline-flex items-center text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400"
+            className="mt-4 inline-flex items-center text-sm font-semibold text-amber-700 transition-colors hover:text-amber-800 hover:underline dark:text-amber-400 dark:hover:text-amber-300"
           >
             <ArrowLeft className="mr-1.5 h-4 w-4" />
             Continue shopping
           </Link>
+        </section>
+
+        <aside className="lg:sticky lg:top-24">
+          <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+            <div className="border-b border-neutral-100 px-5 py-4 dark:border-neutral-900">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-base font-bold text-neutral-950 dark:text-white">
+                  Price details
+                </h2>
+                <span className="text-xs text-neutral-500">
+                  {itemCount} {itemCount === 1 ? "item" : "items"}
+                </span>
+              </div>
+            </div>
+
+            <div className="px-5 py-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-neutral-500">Subtotal</span>
+                <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+                  {formatINRFromPaise(authoritativeSubtotal)}
+                </span>
+              </div>
+
+              <div className="mt-3 flex items-start justify-between gap-4 text-sm">
+                <span className="text-neutral-500">Delivery &amp; tax</span>
+                <span className="text-right text-xs font-medium text-neutral-500">
+                  Calculated at checkout
+                </span>
+              </div>
+
+              <div className="my-4 border-t border-dashed border-neutral-200 dark:border-neutral-800" />
+
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                    Total
+                  </p>
+                  <p className="mt-1 text-[11px] text-neutral-400">
+                    Final amount shown before payment
+                  </p>
+                </div>
+                <p className="text-xl font-bold tracking-tight text-neutral-950 dark:text-white">
+                  {formatINRFromPaise(authoritativeSubtotal)}
+                </p>
+              </div>
+
+              <Link
+                href={checkoutBlocked ? "#" : "/checkout"}
+                aria-disabled={checkoutBlocked}
+                className={
+                  checkoutBlocked ? "pointer-events-none mt-5 block" : "mt-5 block"
+                }
+              >
+                <Button className="w-full" size="lg" disabled={checkoutBlocked}>
+                  Proceed to checkout
+                  <ChevronRight className="ml-1.5 h-4 w-4" />
+                </Button>
+              </Link>
+
+              <div className="mt-4 space-y-2.5 border-t border-neutral-100 pt-4 dark:border-neutral-900">
+                <div className="flex items-center gap-2.5 text-xs text-neutral-500">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  Secure checkout and payment verification
+                </div>
+                <div className="flex items-center gap-2.5 text-xs text-neutral-500">
+                  <Truck className="h-4 w-4 text-amber-600" />
+                  Delivery, tax and coupons recalculated at checkout
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
+            <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">
+              Price &amp; availability checked
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-neutral-500">
+              Your cart uses the latest store catalog values before checkout.
+            </p>
+          </div>
         </aside>
       </div>
     </PageContainer>
