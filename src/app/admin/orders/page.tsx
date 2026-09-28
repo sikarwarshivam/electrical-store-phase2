@@ -178,11 +178,15 @@ export default async function AdminOrdersPage({
                 </div>
               ) : null}
 
-              <div className="mt-4 grid gap-3 border-t border-neutral-200 pt-4 text-sm dark:border-neutral-800 sm:grid-cols-3">
+              <div className="mt-4 grid gap-3 border-t border-neutral-200 pt-4 text-sm dark:border-neutral-800 sm:grid-cols-4">
                 <div>
                   <p className="text-xs text-neutral-500">Delivery</p>
                   <p className="mt-1 font-medium">
                     {order.shippingAddress.city}, {order.shippingAddress.state} · {order.shippingAddress.pincode}
+                  </p>
+                  <p className="mt-0.5 text-xs text-neutral-500">
+                    {order.pricing.deliveryMethod === "SELF_DELIVERY" ? "Local delivery" : "Courier delivery"}
+                    {order.pricing.deliveryDistanceKm !== undefined ? " · " + order.pricing.deliveryDistanceKm + " km" : ""}
                   </p>
                 </div>
                 <div>
@@ -190,6 +194,17 @@ export default async function AdminOrdersPage({
                   <p className="mt-1 font-medium">
                     {order.items.map((item) => item.sku).join(", ")}
                   </p>
+                </div>
+                <div>
+                  <p className="text-xs text-neutral-500">Tax</p>
+                  <p className="mt-1 font-medium">
+                    {order.pricing.taxPaise > 0
+                      ? formatINRFromPaise(order.pricing.taxPaise)
+                      : "No GST charged"}
+                  </p>
+                  {order.pricing.taxIncludedPaise > 0 ? (
+                    <p className="mt-0.5 text-xs text-neutral-500">Included in product prices</p>
+                  ) : null}
                 </div>
                 <div>
                   <p className="text-xs text-neutral-500">Inventory</p>
