@@ -18,6 +18,13 @@ export const checkoutAddressSchema = z.object({
     .max(254)
     .optional()
     .or(z.literal("")),
+  gstin: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/, "Enter a valid GSTIN.")
+    .optional()
+    .or(z.literal("")),
   pincode: z
     .string()
     .regex(/^\d{6}$/, "Please enter a valid 6-digit pincode"),
