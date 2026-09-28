@@ -48,10 +48,20 @@ export default async function CustomerOrderDetailPage({
       title={"Order " + order.orderNumber}
       description="Order details and delivery tracking."
       actions={
-        <Link href="/account/orders" className="inline-flex items-center text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400">
-          <ArrowLeft className="mr-1.5 h-4 w-4" />
-          My orders
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link href="/account/orders" className="inline-flex items-center text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400">
+            <ArrowLeft className="mr-1.5 h-4 w-4" />
+            My orders
+          </Link>
+          {!failed ? (
+            <Link
+              href={"/account/orders/" + encodeURIComponent(orderNumber) + "/invoice"}
+              className="inline-flex items-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-900"
+            >
+              View invoice
+            </Link>
+          ) : null}
+        </div>
       }
     >
       <CatalogMessage success={paramsData.success} error={paramsData.error} />
