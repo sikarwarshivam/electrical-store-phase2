@@ -71,7 +71,7 @@ export default async function CategoriesPage() {
                     </p>
                   )}
                 </div>
-              </Link>/Link>
+              </Link>
 
               {category.children.length > 0 ? (
                 <div className="border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
