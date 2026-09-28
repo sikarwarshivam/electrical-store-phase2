@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageContainer } from "@/components/layout/page-container";
 import { ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -165,6 +166,17 @@ export default async function AdminOrdersPage({
                   )}
                 </div>
               </div>
+
+              {order.status !== "FAILED" && order.payment.status !== "FAILED" ? (
+                <div className="mt-4 flex items-center justify-end border-t border-neutral-200 pt-4 dark:border-neutral-800">
+                  <Link
+                    href={"/admin/orders/" + encodeURIComponent(order.orderNumber) + "/invoice"}
+                    className="inline-flex items-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-900"
+                  >
+                    View invoice
+                  </Link>
+                </div>
+              ) : null}
 
               <div className="mt-4 grid gap-3 border-t border-neutral-200 pt-4 text-sm dark:border-neutral-800 sm:grid-cols-3">
                 <div>
