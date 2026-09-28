@@ -241,6 +241,7 @@ const OrderCustomerSchema = new Schema<IOrderCustomer>(
     name: { type: String, required: true, trim: true, maxlength: 120 },
     phone: { type: String, required: true, trim: true, maxlength: 10, index: true },
     email: { type: String, trim: true, lowercase: true, maxlength: 254 },
+    gstin: { type: String, trim: true, uppercase: true, maxlength: 15 },
   },
   { _id: false }
 );
