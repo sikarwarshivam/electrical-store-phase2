@@ -460,6 +460,263 @@ export const getPublicCategoryBySlug = cache(async function getPublicCategoryByS
   };
 });
 
+
+type SearchCandidate = {
+  _id: mongoose.Types.ObjectId;
+  name?: string;
+  slug?: string;
+  shortDescription?: string;
+  description?: string;
+  searchKeywords?: string[];
+  attributes?: Array<{ label?: string; value?: unknown }>;
+  product?: mongoose.Types.ObjectId;
+  sku?: string;
+  title?: string;
+  options?: Array<{ name?: string; value?: string }>;
+};
+
+type SearchMatch = {
+  id: string;
+  score: number;
+  name: string;
+  fuzzy: boolean;
+};
+
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function searchTokens(value: string): string[] {
+  return normalizeSearchText(value)
+    .split(" ")
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function singularSearchToken(token: string): string {
+  if (token.length <= 3) return token;
+  if (token.endsWith("ies") && token.length > 4) {
+    return token.slice(0, -3) + "y";
+  }
+  if (token.endsWith("sses") && token.length > 5) {
+    return token.slice(0, -2);
+  }
+  if (token.endsWith("es") && token.length > 4) {
+    return token.slice(0, -2);
+  }
+  if (token.endsWith("s") && token.length > 3) {
+    return token.slice(0, -1);
+  }
+  return token;
+}
+
+function boundedLevenshtein(a: string, b: string, maxDistance: number): number {
+  if (Math.abs(a.length - b.length) > maxDistance) return maxDistance + 1;
+
+  const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+
+  for (let i = 1; i <= a.length; i += 1) {
+    const current = [i];
+    let rowMinimum = current[0];
+
+    for (let j = 1; j <= b.length; j += 1) {
+      const substitutionCost = a[i - 1] === b[j - 1] ? 0 : 1;
+      const value = Math.min(
+        previous[j] + 1,
+        current[j - 1] + 1,
+        previous[j - 1] + substitutionCost
+      );
+      current.push(value);
+      rowMinimum = Math.min(rowMinimum, value);
+    }
+
+    if (rowMinimum > maxDistance) return maxDistance + 1;
+
+    for (let j = 0; j < current.length; j += 1) {
+      previous[j] = current[j];
+    }
+  }
+
+  return previous[b.length];
+}
+
+function searchTokenScore(queryToken: string, candidateToken: string): { score: number; fuzzy: boolean } {
+  const query = singularSearchToken(queryToken);
+  const candidate = singularSearchToken(candidateToken);
+
+  if (query === candidate) return { score: 50, fuzzy: false };
+  if (candidate.startsWith(query) || query.startsWith(candidate)) {
+    return { score: 34, fuzzy: false };
+  }
+
+  const maxDistance = query.length >= 7 ? 2 : query.length >= 5 ? 1 : query.length >= 4 ? 1 : 0;
+  if (maxDistance === 0) return { score: 0, fuzzy: false };
+
+  const distance = boundedLevenshtein(query, candidate, maxDistance);
+  if (distance > maxDistance) return { score: 0, fuzzy: false };
+
+  return {
+    score: distance === 1 ? 28 : 20,
+    fuzzy: true,
+  };
+}
+
+function scoreSearchCandidate(queryText: string, candidate: SearchCandidate): Omit<SearchMatch, "id"> {
+  const queryTokens = searchTokens(queryText);
+  if (queryTokens.length === 0) {
+    return { score: 0, name: candidate.name || candidate.title || "", fuzzy: false };
+  }
+
+  const fields = [
+    { text: candidate.name || "", weight: 4 },
+    { text: candidate.title || "", weight: 3 },
+    { text: candidate.sku || "", weight: 3 },
+    { text: candidate.slug || "", weight: 2 },
+    { text: (candidate.searchKeywords || []).join(" "), weight: 3 },
+    { text: candidate.shortDescription || "", weight: 2 },
+    { text: candidate.description || "", weight: 1 },
+    {
+      text: (candidate.options || [])
+        .flatMap((option) => [option.name || "", option.value || ""])
+        .join(" "),
+      weight: 2,
+    },
+    {
+      text: (candidate.attributes || [])
+        .flatMap((attribute) => [
+          attribute.label || "",
+          attribute.value == null ? "" : String(attribute.value),
+        ])
+        .join(" "),
+      weight: 2,
+    },
+  ];
+
+  const normalizedWholeQuery = normalizeSearchText(queryText);
+  const normalizedName = normalizeSearchText(candidate.name || candidate.title || "");
+  const compactQuery = normalizedWholeQuery.replace(/ /g, "");
+  const compactName = normalizedName.replace(/ /g, "");
+
+  let score = 0;
+  let matchedTokens = 0;
+  let fuzzy = false;
+
+  for (const queryToken of queryTokens) {
+    let bestScore = 0;
+    let bestFuzzy = false;
+
+    for (const field of fields) {
+      const normalizedField = normalizeSearchText(field.text);
+      if (!normalizedField) continue;
+
+      if (normalizedField.includes(queryToken)) {
+        bestScore = Math.max(bestScore, 44 * field.weight);
+      }
+
+      for (const candidateToken of searchTokens(normalizedField)) {
+        const result = searchTokenScore(queryToken, candidateToken);
+        const weightedScore = result.score * field.weight;
+        if (weightedScore > bestScore) {
+          bestScore = weightedScore;
+          bestFuzzy = result.fuzzy;
+        }
+      }
+    }
+
+    if (bestScore > 0) {
+      matchedTokens += 1;
+      score += bestScore;
+      fuzzy = fuzzy || bestFuzzy;
+    }
+  }
+
+  const requiredMatches = Math.max(1, Math.ceil(queryTokens.length * 0.6));
+  if (matchedTokens < requiredMatches) {
+    return {
+      score: 0,
+      name: candidate.name || candidate.title || "",
+      fuzzy: false,
+    };
+  }
+
+  if (normalizedName.includes(normalizedWholeQuery)) score += 110;
+  if (compactQuery && compactName.includes(compactQuery)) score += 55;
+  if (matchedTokens === queryTokens.length) score += 45;
+
+  return {
+    score,
+    name: candidate.name || candidate.title || "",
+    fuzzy,
+  };
+}
+
+async function findPublicSearchMatches(
+  queryText: string,
+  allowedProductIds: mongoose.Types.ObjectId[]
+): Promise<SearchMatch[]> {
+  const normalized = normalizeSearchText(queryText);
+  if (!normalized || allowedProductIds.length === 0) return [];
+
+  const productCandidates = (await Product.find({
+    status: "ACTIVE",
+    _id: { $in: allowedProductIds },
+  })
+    .select("_id name slug shortDescription description searchKeywords attributes")
+    .limit(5000)
+    .lean()) as SearchCandidate[];
+
+  const variantCandidates = (await ProductVariant.find({
+    status: "ACTIVE",
+    product: { $in: allowedProductIds },
+  })
+    .select("product sku title options attributes")
+    .limit(5000)
+    .lean()) as unknown as SearchCandidate[];
+
+  const scores = new Map<string, SearchMatch>();
+
+  for (const candidate of productCandidates) {
+    const scored = scoreSearchCandidate(normalized, candidate);
+    if (scored.score <= 0) continue;
+
+    scores.set(stringId(candidate._id), {
+      id: stringId(candidate._id),
+      score: scored.score,
+      name: candidate.name || "",
+      fuzzy: scored.fuzzy,
+    });
+  }
+
+  for (const candidate of variantCandidates) {
+    if (!candidate.product) continue;
+
+    const scored = scoreSearchCandidate(normalized, candidate);
+    if (scored.score <= 0) continue;
+
+    const id = stringId(candidate.product);
+    const existing = scores.get(id);
+    const mergedScore = Math.max(existing?.score || 0, scored.score + 12);
+
+    scores.set(id, {
+      id,
+      score: mergedScore,
+      name: existing?.name || scored.name,
+      fuzzy: Boolean(existing?.fuzzy || scored.fuzzy),
+    });
+  }
+
+  return Array.from(scores.values())
+    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+    .slice(0, 50);
+}
+
 export async function getPublicProducts(options: {
   q?: string;
   spec?: string;
@@ -550,39 +807,15 @@ export async function getPublicProducts(options: {
   }
 
   const idSets: string[][] = [];
+  let searchMatchOrder: string[] = [];
+  let searchMatches: SearchMatch[] = [];
 
   const queryText = options.q?.trim().slice(0, 80);
   if (queryText) {
-    const regex = new RegExp(escapeRegex(queryText), "i");
-    const [productMatches, variantMatches] = await Promise.all([
-      Product.find({
-        status: "ACTIVE",
-        $or: [
-          { name: regex },
-          { shortDescription: regex },
-          { description: regex },
-          { searchKeywords: regex },
-          { "attributes.label": regex },
-          { "attributes.value": regex },
-        ],
-      }).distinct("_id"),
-      ProductVariant.find({
-        status: "ACTIVE",
-        $or: [
-          { sku: regex },
-          { title: regex },
-          { "options.name": regex },
-          { "options.value": regex },
-          { "attributes.label": regex },
-          { "attributes.value": regex },
-        ],
-      }).distinct("product"),
-    ]);
+    searchMatches = await findPublicSearchMatches(queryText, activeVariantProductIds);
+    searchMatchOrder = searchMatches.map((match) => match.id);
 
-    idSets.push([
-      ...productMatches.map(stringId),
-      ...variantMatches.map(stringId),
-    ]);
+    idSets.push(searchMatches.map((match) => match.id));
   }
 
   const specText = options.spec?.trim().slice(0, 100);
@@ -684,6 +917,15 @@ export async function getPublicProducts(options: {
   const publicProducts = products.map((product) =>
     publicCard(product, variantsByProduct.get(stringId(product._id)) || [], inventoryMap)
   );
+
+  if (queryText && searchMatchOrder.length > 0 && !needsPriceSort && sort !== "name") {
+    const relevance = new Map(searchMatchOrder.map((id, index) => [id, index]));
+    publicProducts.sort(
+      (a, b) =>
+        (relevance.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (relevance.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+    );
+  }
 
   if (needsPriceSort) {
     publicProducts.sort((a, b) =>
