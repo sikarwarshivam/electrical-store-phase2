@@ -144,7 +144,7 @@ export interface IOrderPricing {
   couponCode?: string;
   shippingPaise: number;
   deliveryMethod: "SELF_DELIVERY" | "COURIER";
-  gstRegistered: boolean;
+  gstRegistered?: boolean;
   deliveryDistanceKm?: number;
   taxPaise: number;
   taxIncludedPaise: number;
@@ -279,7 +279,7 @@ const OrderPricingSchema = new Schema<IOrderPricing>(
     discountPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
     couponCode: { type: String, trim: true, uppercase: true, maxlength: 40 },
     shippingPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
-    gstRegistered: { type: Boolean, required: true, default: false },
+    gstRegistered: { type: Boolean, default: false },
     deliveryMethod: {
       type: String,
       enum: ["SELF_DELIVERY", "COURIER"],
