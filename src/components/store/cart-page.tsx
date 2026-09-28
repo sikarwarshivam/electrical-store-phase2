@@ -193,14 +193,7 @@ export function CartPage() {
 
   return (
     <PageContainer
-      title={
-        <span className="flex flex-wrap items-center gap-2">
-          Shopping Cart
-          <span className="text-sm font-medium text-neutral-400">
-            ({itemCount} {itemCount === 1 ? "item" : "items"})
-          </span>
-        </span>
-      }
+      title="Shopping Cart"
       description="Current price and stock are verified against the store catalog."
       actions={
         <Button
@@ -446,10 +439,10 @@ export function CartPage() {
                     Total
                   </p>
                   <p className="mt-1 text-[11px] text-neutral-400">
-                    Final amount shown before payment
+                    Delivery and tax are calculated at checkout
                   </p>
                 </div>
-                <p className="text-xl font-bold tracking-tight text-neutral-950 dark:text-white">
+                <p className="text-lg font-bold tracking-tight text-neutral-950 dark:text-white">
                   {formatINRFromPaise(authoritativeSubtotal)}
                 </p>
               </div>
