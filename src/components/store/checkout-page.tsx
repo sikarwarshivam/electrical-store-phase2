@@ -310,6 +310,7 @@ export function CheckoutPage() {
               landmark: defaultAddress.landmark,
               city: defaultAddress.city,
               state: defaultAddress.state,
+              gstin: current.gstin,
             };
           });
         }
@@ -1066,7 +1067,7 @@ export function CheckoutPage() {
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
               Delivery is selected from the pincode serviceability settings.
-              GST uses the product's configured tax rate and inclusive/exclusive
+              GST uses the product&apos;s configured tax rate and inclusive/exclusive
               pricing mode. Payment is revalidated against the same server rules.
             </span>
           </div>
