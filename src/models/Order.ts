@@ -52,6 +52,7 @@ export interface IOrderCustomer {
   name: string;
   phone: string;
   email?: string;
+  gstin?: string;
 }
 
 export interface IOrderLine {
@@ -73,6 +74,67 @@ export interface IOrderLine {
   taxIncluded: boolean;
   taxPaise: number;
   lineTotalPaise: number;
+}
+
+export type OrderInvoiceDocumentType =
+  | "TAX_INVOICE"
+  | "SALES_RECEIPT";
+
+export interface IOrderInvoiceLine {
+  sku: string;
+  productName: string;
+  variantTitle?: string;
+  hsnCode?: string;
+  quantity: number;
+  unitOfSale: UnitOfSale;
+  unitPricePaise: number;
+  subtotalPaise: number;
+  discountPaise: number;
+  taxablePaise: number;
+  gstRate?: number;
+  taxPaise: number;
+  cgstPaise: number;
+  sgstPaise: number;
+  igstPaise: number;
+  lineTotalPaise: number;
+}
+
+export interface IOrderInvoice {
+  documentType: OrderInvoiceDocumentType;
+  invoiceNumber: string;
+  financialYear: string;
+  issuedAt: Date;
+  supplier: {
+    legalName: string;
+    tradeName?: string;
+    gstin?: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    stateCode: string;
+    phone?: string;
+    email?: string;
+  };
+  buyer: {
+    name: string;
+    phone: string;
+    email?: string;
+    gstin?: string;
+    address: IOrderAddress;
+  };
+  placeOfSupply: {
+    state: string;
+    stateCode?: string;
+  };
+  reverseCharge: boolean;
+  deliveryMethod: "SELF_DELIVERY" | "COURIER";
+  shippingPaise: number;
+  taxPaise: number;
+  taxIncludedPaise: number;
+  taxAddedPaise: number;
+  grandTotalPaise: number;
+  lines: IOrderInvoiceLine[];
 }
 
 export interface IOrderPricing {
@@ -317,6 +379,10 @@ const OrderSchema = new Schema<IOrder>(
     pricing: {
       type: OrderPricingSchema,
       required: true,
+    },
+    invoice: {
+      type: OrderInvoiceSchema,
+      required: false,
     },
     status: {
       type: String,
