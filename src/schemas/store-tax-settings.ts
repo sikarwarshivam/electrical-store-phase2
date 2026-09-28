@@ -22,13 +22,14 @@ export const storeTaxProfileSchema = z
   })
   .superRefine((value, ctx) => {
     if (value.registrationStatus === "REGISTERED") {
-      if (!/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(value.gstin)) {
+      const gstin = value.gstin;
+      if (!gstin || !/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gstin)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["gstin"],
           message: "Enter a valid 15-character GSTIN.",
         });
-      } else if (value.gstin.slice(0, 2) !== value.stateCode) {
+      } else if (gstin.slice(0, 2) !== value.stateCode) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["stateCode"],
