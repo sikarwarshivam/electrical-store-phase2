@@ -25,39 +25,53 @@ export default async function CategoriesPage() {
           {categories.map((category) => (
             <article
               key={category.id}
-              className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"
+              className="group overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-lg hover:shadow-neutral-900/5 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-amber-800"
             >
               <Link href={"/categories/" + category.slug} className="group block">
                 <div className="relative aspect-[16/10] overflow-hidden bg-neutral-100 dark:bg-neutral-900">
                   {category.imageUrl ? (
-<Image
+                    <Image
                       src={category.imageUrl}
                       alt={category.name}
                       fill
                       sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.07] group-hover:translate-x-0.5 motion-reduce:transition-none"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-neutral-400">
                       <FolderTree className="h-12 w-12" />
                     </div>
                   )}
+
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950/60 via-neutral-950/5 to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-85" />
+
+                  <div className="absolute inset-x-0 bottom-0 p-4">
+                    <div className="flex items-end justify-between gap-3 text-white">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70">
+                          Electrical category
+                        </p>
+                        <h2 className="mt-1 truncate text-lg font-bold">
+                          {category.name}
+                        </h2>
+                      </div>
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 backdrop-blur-md transition-transform duration-300 group-hover:translate-x-0.5 group-hover:bg-amber-600 group-hover:border-amber-500">
+                        <ArrowRight className="h-4 w-4" />
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h2 className="font-semibold group-hover:text-amber-700 dark:group-hover:text-amber-400">
-                        {category.name}
-                      </h2>
-                      {category.description ? (
-                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-neutral-500">
-                          {category.description}
-                        </p>
-                      ) : null}
-                    </div>
-                    <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400 transition-transform group-hover:translate-x-0.5 group-hover:text-amber-600" />
-                  </div>
+                  {category.description ? (
+                    <p className="line-clamp-2 text-xs leading-5 text-neutral-500">
+                      {category.description}
+                    </p>
+                  ) : (
+                    <p className="text-xs font-medium text-neutral-500">
+                      Explore products in this category
+                    </p>
+                  )}
                 </div>
               </Link>
 
@@ -70,13 +84,16 @@ export default async function CategoriesPage() {
                   <div className="flex flex-wrap gap-2">
                     {category.children.slice(0, 6).map((child) => (
                       <Link key={child.id} href={"/categories/" + child.slug}>
-                        <Badge variant="outline" className="hover:border-amber-400 hover:text-amber-700 dark:hover:text-amber-300">
+                        <Badge
+                          variant="outline"
+                          className="bg-white transition-colors hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700 dark:bg-neutral-950 dark:hover:border-amber-700 dark:hover:bg-amber-950/30 dark:hover:text-amber-300"
+                        >
                           {child.name}
                         </Badge>
                       </Link>
                     ))}
                     {category.children.length > 6 ? (
-                      <span className="text-[11px] text-neutral-400">
+                      <span className="px-1 py-0.5 text-[11px] text-neutral-400">
                         +{category.children.length - 6} more
                       </span>
                     ) : null}
