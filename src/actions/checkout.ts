@@ -9,6 +9,7 @@ import {
 } from "@/lib/checkout-pricing";
 import { getStoreSettings } from "@/actions/store-settings";
 import { Product } from "@/models/Product";
+import { StoreTaxProfile, DEFAULT_STORE_TAX_PROFILE } from "@/models/StoreTaxProfile";
 import { checkoutQuoteSchema } from "@/schemas/order";
 
 export type CheckoutQuoteLine = {
@@ -101,6 +102,27 @@ export async function getCheckoutQuoteAction(
       products.map((product) => [String(product._id), product])
     );
 
+    const storedTaxProfile = await StoreTaxProfile.findOne({ key: "default" }).lean();
+    const taxProfile = storedTaxProfile
+      ? { ...DEFAULT_STORE_TAX_PROFILE, ...storedTaxProfile }
+      : DEFAULT_STORE_TAX_PROFILE;
+    const gstRegistered = taxProfile.registrationStatus === "REGISTERED";
+
+    if (gstRegistered) {
+      const missingTaxProduct = reconciliation.lines.find((line) => {
+        const product = productMap.get(line.productId!);
+        return !product?.tax?.hsnCode || product.tax.gstRate === undefined;
+      });
+
+      if (missingTaxProduct) {
+        return {
+          success: false,
+          error:
+            "GST details are incomplete for one or more products. Please ask the store administrator to configure HSN and GST rate before checkout.",
+        };
+      }
+    }
+
     const baseLines = reconciliation.lines.map((line) => {
       const product = productMap.get(line.productId!);
 
@@ -111,7 +133,7 @@ export async function getCheckoutQuoteAction(
         unitPricePaise: line.unitPricePaise!,
         mrpPaise: line.mrpPaise!,
         subtotalPaise: line.unitPricePaise! * line.quantity,
-        gstRate: product?.tax?.gstRate,
+        gstRate: gstRegistered ? product?.tax?.gstRate : undefined,
         taxIncluded: product?.tax?.isGstInclusive ?? true,
       };
     });
