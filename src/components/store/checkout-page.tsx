@@ -777,7 +777,9 @@ export function CheckoutPage() {
                           ? "[6-9][0-9]{9}"
                           : field === "pincode"
                             ? "[0-9]{6}"
-                            : undefined
+                            : field === "gstin"
+                              ? "[0-9A-Z]{15}"
+                              : undefined
                     }
                     maxLength={
                       field === "fullName"
@@ -801,7 +803,7 @@ export function CheckoutPage() {
                               ? "postal-code"
                               : undefined
                     }
-                    required={!["email", "landmark"].includes(field)}
+                    required={!["email", "landmark", "gstin"].includes(field)}
                     className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-amber-500 dark:border-neutral-700 dark:bg-neutral-900"
                   />
                 </label>
