@@ -44,6 +44,13 @@ const requiredFiles = [
   "src/app/admin/products/page.tsx",
   "src/app/admin/products/[id]/page.tsx",
   "src/app/admin/inventory/page.tsx",
+  "src/models/StoreTaxProfile.ts",
+  "src/models/InvoiceCounter.ts",
+  "src/lib/gst.ts",
+  "src/lib/invoice.ts",
+  "src/actions/invoice.ts",
+  "src/app/(store)/account/orders/[orderNumber]/invoice/page.tsx",
+  "src/app/admin/orders/[orderNumber]/invoice/page.tsx",
 ];
 
 for (const file of requiredFiles) {
@@ -67,6 +74,17 @@ assert(catalogSchema.includes('gstRate') && catalogSchema.includes('hsnCode'), "
 assert(catalogSchema.includes('METER') && catalogSchema.includes('ROLL') && catalogSchema.includes('PACK'), "Measurable/pack sale units are supported");
 assert(cartTypes.includes('variantId') && cartTypes.includes('unitPricePaise'), "Cart foundation identifies SKU/variant and uses paise");
 assert(!read("src/app/admin/categories/page.tsx").includes("18% on electrical accessories"), "No hardcoded GST example remains in category admin UI");
+
+const orderModel = read("src/models/Order.ts");
+const taxProfileModel = read("src/models/StoreTaxProfile.ts");
+const invoiceModel = read("src/models/InvoiceCounter.ts");
+const invoiceService = read("src/lib/invoice.ts");
+
+assert(orderModel.includes("gstRegistered") && orderModel.includes("invoice"), "Orders can preserve GST and invoice snapshots");
+assert(taxProfileModel.includes("gstin") && taxProfileModel.includes("invoicePrefix"), "Store tax profile supports GSTIN and invoice identity");
+assert(invoiceModel.includes("financialYear") && invoiceModel.includes("sequence"), "Invoice numbering is sequenced per financial year");
+assert(invoiceService.includes("getIndianFinancialYear") && invoiceService.includes("ensureInvoiceForOrder"), "Invoice service supports financial-year numbering and idempotent issuance");
+
 
 console.log(`\nPhase 2 Architecture Tests: ${passed}/${total} checks passed`);
 
