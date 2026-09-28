@@ -558,7 +558,7 @@ function searchTokenScore(queryToken: string, candidateToken: string): { score: 
     return { score: 34, fuzzy: false };
   }
 
-  const maxDistance = query.length >= 7 ? 2 : query.length >= 5 ? 1 : query.length >= 4 ? 1 : 0;
+  const maxDistance = query.length >= 5 ? 2 : query.length >= 4 ? 1 : 0;
   if (maxDistance === 0) return { score: 0, fuzzy: false };
 
   const distance = boundedLevenshtein(query, candidate, maxDistance);
