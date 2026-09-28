@@ -33,23 +33,72 @@ export async function GET(request: Request) {
       pricePaise: product.pricePaise,
     }));
 
-    const normalizedQuery = query
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+    function normalize(value: string) {
+      return value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
 
+    function singular(value: string) {
+      if (value.length <= 3) return value;
+      if (value.endsWith("ies") && value.length > 4) {
+        return value.slice(0, -3) + "y";
+      }
+      if (value.endsWith("es") && value.length > 4) {
+        return value.slice(0, -2);
+      }
+      if (value.endsWith("s") && value.length > 3) {
+        return value.slice(0, -1);
+      }
+      return value;
+    }
+
+    function distance(a: string, b: string) {
+      const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+
+      for (let i = 1; i <= a.length; i += 1) {
+        const current = [i];
+        for (let j = 1; j <= b.length; j += 1) {
+          current.push(
+            Math.min(
+              previous[j] + 1,
+              current[j - 1] + 1,
+              previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+            )
+          );
+        }
+        for (let j = 0; j < current.length; j += 1) previous[j] = current[j];
+      }
+
+      return previous[b.length];
+    }
+
+    const queryTokens = normalize(query).split(" ").filter(Boolean);
     const topName = products[0]?.name || "";
-    const normalizedTopName = topName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+    const nameTokens = normalize(topName).split(" ").filter(Boolean);
+
+    const hasTypoSignal =
+      queryTokens.length > 0 &&
+      queryTokens.some((queryToken) => {
+        const singularQuery = singular(queryToken);
+        const exactMatch = nameTokens.some(
+          (nameToken) => singular(nameToken) === singularQuery
+        );
+        if (exactMatch) return false;
+
+        const nearMatch = nameTokens.some(
+          (nameToken) =>
+            singularQuery.length >= 4 &&
+            distance(singularQuery, singular(nameToken)) <=
+              (singularQuery.length >= 7 ? 2 : 1)
+        );
+        return nearMatch;
+      });
 
     const didYouMean =
-      products.length > 0 &&
-      normalizedTopName !== normalizedQuery &&
-      normalizedQuery.length >= 4
+      products.length > 0 && hasTypoSignal && queryTokens.length > 0
         ? topName
         : null;
 
