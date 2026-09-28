@@ -41,7 +41,7 @@ export default async function CustomerInvoicePage({
               <p className="mt-1">{result.error}</p>
               <p className="mt-3 text-xs opacity-80">
                 The order is not affected. The invoice can be issued after the
-                store's tax and business profile is configured.
+                store&apos;s tax and business profile is configured.
               </p>
             </div>
           </div>
