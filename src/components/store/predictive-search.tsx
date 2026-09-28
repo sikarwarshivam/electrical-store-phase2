@@ -34,6 +34,7 @@ export function PredictiveSearch({ mobile = false }: PredictiveSearchProps) {
   const [isOpen, setOpen] = useState(false);
   const [isLoading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
