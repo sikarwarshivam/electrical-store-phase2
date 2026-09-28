@@ -272,6 +272,140 @@ const OrderLineSchema = new Schema<IOrderLine>(
   { _id: false }
 );
 
+
+const OrderInvoiceLineSchema = new Schema<IOrderInvoiceLine>(
+  {
+    sku: { type: String, required: true, trim: true, maxlength: 100 },
+    productName: { type: String, required: true, trim: true, maxlength: 180 },
+    variantTitle: { type: String, trim: true, maxlength: 160 },
+    hsnCode: { type: String, trim: true, maxlength: 20 },
+    quantity: { type: Number, required: true, min: Number.EPSILON, max: 1_000_000 },
+    unitOfSale: { type: String, required: true },
+    unitPricePaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
+    subtotalPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
+    discountPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER, default: 0 },
+    taxablePaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
+    gstRate: { type: Number, min: 0, max: 100 },
+    taxPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
+    cgstPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
+    sgstPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
+    igstPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
+    lineTotalPaise: { type: Number, required: true, min: 0, max: Number.MAX_SAFE_INTEGER },
+  },
+  { _id: false }
+);
+
+const OrderInvoiceSupplierSchema = new Schema<IOrderInvoice["supplier"]>(
+  {
+    legalName: { type: String, required: true, trim: true, maxlength: 180 },
+    tradeName: { type: String, trim: true, maxlength: 180 },
+    gstin: { type: String, trim: true, uppercase: true, maxlength: 15 },
+    addressLine1: { type: String, required: true, trim: true, maxlength: 200 },
+    addressLine2: { type: String, trim: true, maxlength: 200 },
+    city: { type: String, required: true, trim: true, maxlength: 100 },
+    state: { type: String, required: true, trim: true, maxlength: 100 },
+    stateCode: { type: String, required: true, trim: true, maxlength: 2 },
+    phone: { type: String, trim: true, maxlength: 15 },
+    email: { type: String, trim: true, lowercase: true, maxlength: 254 },
+  },
+  { _id: false }
+);
+
+const OrderInvoiceBuyerSchema = new Schema<IOrderInvoice["buyer"]>(
+  {
+    name: { type: String, required: true, trim: true, maxlength: 120 },
+    phone: { type: String, required: true, trim: true, maxlength: 10 },
+    email: { type: String, trim: true, lowercase: true, maxlength: 254 },
+    gstin: { type: String, trim: true, uppercase: true, maxlength: 15 },
+    address: { type: OrderAddressSchema, required: true },
+  },
+  { _id: false }
+);
+
+const OrderInvoicePlaceOfSupplySchema =
+  new Schema<IOrderInvoice["placeOfSupply"]>(
+    {
+      state: { type: String, required: true, trim: true, maxlength: 100 },
+      stateCode: { type: String, trim: true, maxlength: 2 },
+    },
+    { _id: false }
+  );
+
+const OrderInvoiceSchema = new Schema<IOrderInvoice>(
+  {
+    documentType: {
+      type: String,
+      enum: ["TAX_INVOICE", "SALES_RECEIPT"],
+      required: true,
+    },
+    invoiceNumber: {
+      type: String,
+      required: true,
+      trim: true,
+      uppercase: true,
+      maxlength: 16,
+    },
+    financialYear: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 5,
+    },
+    issuedAt: { type: Date, required: true },
+    supplier: { type: OrderInvoiceSupplierSchema, required: true },
+    buyer: { type: OrderInvoiceBuyerSchema, required: true },
+    placeOfSupply: {
+      type: OrderInvoicePlaceOfSupplySchema,
+      required: true,
+    },
+    reverseCharge: { type: Boolean, required: true, default: false },
+    deliveryMethod: {
+      type: String,
+      enum: ["SELF_DELIVERY", "COURIER"],
+      required: true,
+    },
+    shippingPaise: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: Number.MAX_SAFE_INTEGER,
+    },
+    taxPaise: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: Number.MAX_SAFE_INTEGER,
+    },
+    taxIncludedPaise: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: Number.MAX_SAFE_INTEGER,
+    },
+    taxAddedPaise: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: Number.MAX_SAFE_INTEGER,
+    },
+    grandTotalPaise: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: Number.MAX_SAFE_INTEGER,
+    },
+    lines: {
+      type: [OrderInvoiceLineSchema],
+      required: true,
+      validate: {
+        validator: (lines: IOrderInvoiceLine[]) => lines.length > 0,
+        message: "Invoice must contain at least one line",
+      },
+    },
+  },
+  { _id: false }
+);
+
 const OrderPricingSchema = new Schema<IOrderPricing>(
   {
     currency: { type: String, enum: ["INR"], default: "INR", required: true },
