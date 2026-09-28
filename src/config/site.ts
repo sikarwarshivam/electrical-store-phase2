@@ -4,8 +4,14 @@
  * Provides neutral placeholders for all client-specific metadata and branding.
  * Phase 1 architecture ensures all store metadata is retrieved from this single source of truth.
  */
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+  process.env.NEXTAUTH_URL?.trim() ||
+  "http://localhost:3000";
+
 export const siteConfig = {
   name: "Electrical Retail Store",
+  url: siteUrl,
   tagline: "Quality Electrical Products, Cables, Switchgear & Accessories",
   description:
     "Production-oriented retail e-commerce platform for electrical supplies, wiring, lighting, appliances, and industrial electrical hardware.",
