@@ -639,7 +639,7 @@ export default async function AdminSettingsPage({
                 <span>
                   <span className="font-medium">Reverse charge applicable</span>
                   <span className="mt-1 block text-xs text-neutral-500">
-                    Enable only when the owner/CA confirms this applies to the store's supplies.
+                    Enable only when the owner/CA confirms this applies to the store&apos;s supplies.
                   </span>
                 </span>
               </label>
