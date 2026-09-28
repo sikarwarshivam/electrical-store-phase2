@@ -53,6 +53,7 @@ interface AddressState {
   landmark: string;
   city: string;
   state: string;
+  gstin: string;
 }
 
 const initialAddress: AddressState = {
@@ -65,6 +66,7 @@ const initialAddress: AddressState = {
   landmark: "",
   city: "",
   state: "",
+  gstin: "",
 };
 
 function validPhone(value: string) {
@@ -194,6 +196,7 @@ export function CheckoutPage() {
       landmark: saved.landmark,
       city: saved.city,
       state: saved.state,
+      gstin: address.gstin,
     });
     setSelectedSavedAddressId(saved.id);
     setSubmitted(false);
@@ -307,6 +310,7 @@ export function CheckoutPage() {
               landmark: defaultAddress.landmark,
               city: defaultAddress.city,
               state: defaultAddress.state,
+              gstin: current.gstin,
             };
           });
         }
@@ -722,6 +726,7 @@ export function CheckoutPage() {
                   ["fullName", "Full name", "text"],
                   ["phone", "Phone", "tel"],
                   ["email", "Email (optional)", "email"],
+                  ["gstin", "GSTIN (optional)", "text"],
                   ["pincode", "Pincode", "text"],
                   ["house", "House / Flat", "text"],
                   ["street", "Street / Locality", "text"],
@@ -753,14 +758,18 @@ export function CheckoutPage() {
                             ? sanitizeDigits(rawValue, 10)
                             : field === "pincode"
                               ? sanitizeDigits(rawValue, 6)
-                              : rawValue;
+                              : field === "gstin"
+                                ? rawValue.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15)
+                                : rawValue;
 
                       updateField(field, value);
                     }}
                     inputMode={
                       field === "phone" || field === "pincode"
                         ? "numeric"
-                        : undefined
+                        : field === "gstin"
+                          ? "text"
+                          : undefined
                     }
                     pattern={
                       field === "fullName"
@@ -769,7 +778,9 @@ export function CheckoutPage() {
                           ? "[6-9][0-9]{9}"
                           : field === "pincode"
                             ? "[0-9]{6}"
-                            : undefined
+                            : field === "gstin"
+                              ? "[0-9A-Z]{15}"
+                              : undefined
                     }
                     maxLength={
                       field === "fullName"
@@ -778,7 +789,9 @@ export function CheckoutPage() {
                           ? 10
                           : field === "pincode"
                             ? 6
-                            : undefined
+                            : field === "gstin"
+                              ? 15
+                              : undefined
                     }
                     autoComplete={
                       field === "fullName"
@@ -791,7 +804,7 @@ export function CheckoutPage() {
                               ? "postal-code"
                               : undefined
                     }
-                    required={!["email", "landmark"].includes(field)}
+                    required={!["email", "landmark", "gstin"].includes(field)}
                     className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-amber-500 dark:border-neutral-700 dark:bg-neutral-900"
                   />
                 </label>
@@ -801,7 +814,8 @@ export function CheckoutPage() {
             {submitted && !addressComplete ? (
               <p className="mt-4 text-xs font-medium text-red-600">
                 Enter a valid 10-digit Indian phone number, 6-digit pincode,
-                and all required address fields.
+                and all required address fields. GSTIN is optional but must be
+                valid when entered.
               </p>
             ) : null}
           </section>
@@ -1053,7 +1067,7 @@ export function CheckoutPage() {
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
               Delivery is selected from the pincode serviceability settings.
-              GST uses the product's configured tax rate and inclusive/exclusive
+              GST uses the product&apos;s configured tax rate and inclusive/exclusive
               pricing mode. Payment is revalidated against the same server rules.
             </span>
           </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, PackageCheck } from "lucide-react";
+import { CheckCircle2, FileText, PackageCheck } from "lucide-react";
 import { getVerifiedOrderByNumber } from "@/lib/order-commerce";
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/layout/page-container";
@@ -39,6 +39,14 @@ export default async function OrderSuccessPage({
         </p>
         <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
           <Link href="/account/orders"><Button>My orders</Button></Link>
+          {order.customer.userId ? (
+            <Link href={"/account/orders/" + encodeURIComponent(order.orderNumber) + "/invoice"}>
+              <Button variant="outline">
+                <FileText className="mr-1.5 h-4 w-4" />
+                View invoice
+              </Button>
+            </Link>
+          ) : null}
           <Link href="/track-order"><Button variant="outline">Track order</Button></Link>
           <Link href="/products"><Button variant="outline">Continue shopping</Button></Link>
         </div>

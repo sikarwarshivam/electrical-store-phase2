@@ -23,6 +23,11 @@ import {
   calculateDeliveryQuote,
   calculateDiscountedTaxLines,
 } from "@/lib/checkout-pricing";
+import {
+  StoreTaxProfile,
+  DEFAULT_STORE_TAX_PROFILE,
+} from "@/models/StoreTaxProfile";
+import { ensureInvoiceForOrder } from "@/lib/invoice";
 
 function getReservationMinutes() {
   const raw = process.env.PAYMENT_RESERVATION_MINUTES?.trim();
@@ -198,6 +203,27 @@ export async function createPaymentOrderAction(
       .lean();
     const productMap = new Map(products.map((product) => [String(product._id), product]));
 
+    const storedTaxProfile = await StoreTaxProfile.findOne({ key: "default" }).lean();
+    const taxProfile = storedTaxProfile
+      ? { ...DEFAULT_STORE_TAX_PROFILE, ...storedTaxProfile }
+      : DEFAULT_STORE_TAX_PROFILE;
+    const gstRegistered = taxProfile.registrationStatus === "REGISTERED";
+
+    if (gstRegistered) {
+      const missingTaxProduct = reconciliation.lines.find((line) => {
+        const product = productMap.get(line.productId!);
+        return !product?.tax?.hsnCode || product.tax.gstRate === undefined;
+      });
+
+      if (missingTaxProduct) {
+        return {
+          success: false,
+          error:
+            "GST details are incomplete for one or more products. Please ask the store administrator to configure HSN and GST rate before checkout.",
+        };
+      }
+    }
+
     const baseLines = reconciliation.lines.map((line) => {
       const product = productMap.get(line.productId!);
       const subtotalPaise = line.unitPricePaise! * line.quantity;
@@ -217,7 +243,7 @@ export async function createPaymentOrderAction(
         mrpPaise: line.mrpPaise!,
         subtotalPaise,
         hsnCode: product?.tax?.hsnCode,
-        gstRate: product?.tax?.gstRate,
+        gstRate: gstRegistered ? product?.tax?.gstRate : undefined,
         taxIncluded: product?.tax?.isGstInclusive ?? true,
       };
     });
@@ -335,6 +361,7 @@ export async function createPaymentOrderAction(
         name: address.fullName,
         phone: address.phone,
         email: customerEmail,
+        gstin: address.gstin || undefined,
       },
       shippingAddress: {
         ...address,
@@ -348,6 +375,8 @@ export async function createPaymentOrderAction(
         discountPaise,
         couponCode: appliedCouponCode,
         shippingPaise,
+        gstRegistered,
+
         deliveryMethod: deliveryQuote.method,
         deliveryDistanceKm: deliveryQuote.distanceKm,
         taxPaise,
@@ -604,10 +633,25 @@ export async function verifyRazorpayPaymentAction(
 
     const placedOrder = await Order.findById(order._id).lean();
     if (placedOrder) {
-      await sendOrderPlacedEmail({
-        ...placedOrder,
-        id: placedOrder._id,
-      });
+      try {
+        await ensureInvoiceForOrder(placedOrder._id.toString());
+      } catch (invoiceError) {
+        logger.warn("Order was placed but invoice issuance was deferred.", {
+          orderId: placedOrder._id.toString(),
+          error:
+            invoiceError instanceof Error
+              ? invoiceError.message
+              : "Unknown invoice error",
+        });
+      }
+
+      const refreshedPlacedOrder = await Order.findById(order._id).lean();
+      if (refreshedPlacedOrder) {
+        await sendOrderPlacedEmail({
+          ...refreshedPlacedOrder,
+          id: refreshedPlacedOrder._id,
+        });
+      }
     }
 
     return {

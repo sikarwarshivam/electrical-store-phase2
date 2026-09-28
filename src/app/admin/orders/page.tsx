@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageContainer } from "@/components/layout/page-container";
 import { ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -166,11 +167,26 @@ export default async function AdminOrdersPage({
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3 border-t border-neutral-200 pt-4 text-sm dark:border-neutral-800 sm:grid-cols-3">
+              {order.status !== "FAILED" && order.payment.status !== "FAILED" ? (
+                <div className="mt-4 flex items-center justify-end border-t border-neutral-200 pt-4 dark:border-neutral-800">
+                  <Link
+                    href={"/admin/orders/" + encodeURIComponent(order.orderNumber) + "/invoice"}
+                    className="inline-flex items-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-900"
+                  >
+                    View invoice
+                  </Link>
+                </div>
+              ) : null}
+
+              <div className="mt-4 grid gap-3 border-t border-neutral-200 pt-4 text-sm dark:border-neutral-800 sm:grid-cols-4">
                 <div>
                   <p className="text-xs text-neutral-500">Delivery</p>
                   <p className="mt-1 font-medium">
                     {order.shippingAddress.city}, {order.shippingAddress.state} · {order.shippingAddress.pincode}
+                  </p>
+                  <p className="mt-0.5 text-xs text-neutral-500">
+                    {order.pricing.deliveryMethod === "SELF_DELIVERY" ? "Local delivery" : "Courier delivery"}
+                    {order.pricing.deliveryDistanceKm !== undefined ? " · " + order.pricing.deliveryDistanceKm + " km" : ""}
                   </p>
                 </div>
                 <div>
@@ -178,6 +194,17 @@ export default async function AdminOrdersPage({
                   <p className="mt-1 font-medium">
                     {order.items.map((item) => item.sku).join(", ")}
                   </p>
+                </div>
+                <div>
+                  <p className="text-xs text-neutral-500">Tax</p>
+                  <p className="mt-1 font-medium">
+                    {order.pricing.taxPaise > 0
+                      ? formatINRFromPaise(order.pricing.taxPaise)
+                      : "No GST charged"}
+                  </p>
+                  {order.pricing.taxIncludedPaise > 0 ? (
+                    <p className="mt-0.5 text-xs text-neutral-500">Included in product prices</p>
+                  ) : null}
                 </div>
                 <div>
                   <p className="text-xs text-neutral-500">Inventory</p>

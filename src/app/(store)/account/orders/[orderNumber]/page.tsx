@@ -48,10 +48,20 @@ export default async function CustomerOrderDetailPage({
       title={"Order " + order.orderNumber}
       description="Order details and delivery tracking."
       actions={
-        <Link href="/account/orders" className="inline-flex items-center text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400">
-          <ArrowLeft className="mr-1.5 h-4 w-4" />
-          My orders
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link href="/account/orders" className="inline-flex items-center text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400">
+            <ArrowLeft className="mr-1.5 h-4 w-4" />
+            My orders
+          </Link>
+          {!failed ? (
+            <Link
+              href={"/account/orders/" + encodeURIComponent(orderNumber) + "/invoice"}
+              className="inline-flex items-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-900"
+            >
+              View invoice
+            </Link>
+          ) : null}
+        </div>
       }
     >
       <CatalogMessage success={paramsData.success} error={paramsData.error} />
@@ -191,8 +201,18 @@ export default async function CustomerOrderDetailPage({
               </div>
               <div className="mt-5 space-y-2 border-t border-neutral-200 pt-4 text-sm dark:border-neutral-800">
                 <div className="flex justify-between"><span className="text-neutral-500">Subtotal</span><span>{formatINRFromPaise(order.pricing.subtotalPaise)}</span></div>
-                <div className="flex justify-between"><span className="text-neutral-500">Shipping</span><span>{formatINRFromPaise(order.pricing.shippingPaise)}</span></div>
-                <div className="flex justify-between"><span className="text-neutral-500">Tax</span><span>{formatINRFromPaise(order.pricing.taxAddedPaise)}</span></div>
+                {order.pricing.discountPaise > 0 ? (
+                  <div className="flex justify-between"><span className="text-neutral-500">Discount</span><span className="text-emerald-700 dark:text-emerald-400">- {formatINRFromPaise(order.pricing.discountPaise)}</span></div>
+                ) : null}
+                <div className="flex justify-between"><span className="text-neutral-500">Delivery</span><span>{order.pricing.shippingPaise === 0 ? "FREE" : formatINRFromPaise(order.pricing.shippingPaise)}</span></div>
+                {order.pricing.deliveryMethod ? (
+                  <div className="flex justify-between"><span className="text-neutral-500">Delivery method</span><span>{order.pricing.deliveryMethod === "SELF_DELIVERY" ? "Local delivery" : "Courier delivery"}</span></div>
+                ) : null}
+                {order.pricing.taxAddedPaise > 0 ? (
+                  <div className="flex justify-between"><span className="text-neutral-500">GST</span><span>{formatINRFromPaise(order.pricing.taxAddedPaise)}</span></div>
+                ) : order.pricing.taxIncludedPaise > 0 ? (
+                  <div className="flex justify-between"><span className="text-neutral-500">GST (included)</span><span>{formatINRFromPaise(order.pricing.taxIncludedPaise)}</span></div>
+                ) : null}
                 <div className="flex justify-between border-t border-neutral-200 pt-3 text-base font-bold dark:border-neutral-800"><span>Total</span><span>{formatINRFromPaise(order.pricing.grandTotalPaise)}</span></div>
               </div>
               <div className="mt-5 border-t border-neutral-200 pt-4 text-sm dark:border-neutral-800">
