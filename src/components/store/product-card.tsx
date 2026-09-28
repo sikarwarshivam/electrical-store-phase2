@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, PackageSearch } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
