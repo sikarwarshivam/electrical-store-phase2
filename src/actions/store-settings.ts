@@ -16,6 +16,43 @@ function value(formData: FormData, key: string) {
   return typeof raw === "string" ? raw.trim() : "";
 }
 
+function parsePincodeDistanceList(raw: string): Array<{ pincode: string; distanceKm: number }> {
+  const values = raw
+    .split(/[\n,;]+/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (values.length > 1000) {
+    throw new Error("A self-delivery pincode distance list cannot contain more than 1000 entries.");
+  }
+
+  const parsed = values.map((entry) => {
+    const match = entry.match(/^(\d{6})\s*[:=]\s*(\d+(?:\.\d{1,2})?)$/);
+    if (!match) {
+      throw new Error(
+        `Invalid self-delivery distance entry "${entry}". Use pincode=distanceKm, for example 250001=2.5.`
+      );
+    }
+
+    const distanceKm = Number(match[2]);
+    if (!Number.isFinite(distanceKm) || distanceKm < 0 || distanceKm > 1000) {
+      throw new Error(`Invalid delivery distance for pincode "${match[1]}".`);
+    }
+
+    return { pincode: match[1], distanceKm };
+  });
+
+  const seen = new Set<string>();
+  for (const item of parsed) {
+    if (seen.has(item.pincode)) {
+      throw new Error(`Duplicate self-delivery pincode "${item.pincode}".`);
+    }
+    seen.add(item.pincode);
+  }
+
+  return parsed;
+}
+
 function errorRedirect(message: string): never {
   redirect("/admin/settings?error=" + encodeURIComponent(message));
 }
@@ -83,6 +120,8 @@ export async function getStoreSettings() {
       },
       serviceability: {
         selfDeliveryPincodes: serviceability.selfDeliveryPincodes,
+        selfDeliveryPincodeDistances:
+          serviceability.selfDeliveryPincodeDistances ?? [],
         courierPincodes: serviceability.courierPincodes,
       },
       cancellation: {
@@ -111,6 +150,10 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
     codMaxOrderValue: value(formData, "codMaxOrderValue"),
     codConvenienceFee: value(formData, "codConvenienceFee"),
     selfDeliveryPincodes: value(formData, "selfDeliveryPincodes"),
+    selfDeliveryPincodeDistances: value(
+      formData,
+      "selfDeliveryPincodeDistances"
+    ),
     courierPincodes: value(formData, "courierPincodes"),
     cancellationEnabled:
       formData.get("cancellationEnabled") === "off" ? "off" : "on",
@@ -139,10 +182,23 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
   }
 
   let selfDeliveryPincodes: string[];
+  let selfDeliveryPincodeDistances: Array<{ pincode: string; distanceKm: number }>;
   let courierPincodes: string[];
   try {
     selfDeliveryPincodes = parsePincodeList(parsed.data.selfDeliveryPincodes);
+    selfDeliveryPincodeDistances = parsePincodeDistanceList(
+      parsed.data.selfDeliveryPincodeDistances
+    );
     courierPincodes = parsePincodeList(parsed.data.courierPincodes);
+
+    const unknownDistancePincode = selfDeliveryPincodeDistances.find(
+      (entry) => !selfDeliveryPincodes.includes(entry.pincode)
+    );
+    if (unknownDistancePincode) {
+      throw new Error(
+        `Distance mapping "${unknownDistancePincode.pincode}" must also be present in self-delivery pincodes.`
+      );
+    }
   } catch (error) {
     errorRedirect(
       error instanceof Error ? error.message : "Invalid serviceable pincodes."
@@ -192,6 +248,7 @@ export async function updateStoreDeliverySettingsAction(formData: FormData) {
             },
             serviceability: {
               selfDeliveryPincodes,
+              selfDeliveryPincodeDistances,
               courierPincodes,
             },
             cancellation: {

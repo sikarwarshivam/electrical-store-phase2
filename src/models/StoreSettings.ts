@@ -6,6 +6,11 @@ export interface IDeliveryDistanceSlab {
   feePaise: number;
 }
 
+export interface ISelfDeliveryPincodeDistance {
+  pincode: string;
+  distanceKm: number;
+}
+
 export interface IStoreSettings extends Document {
   key: "default";
   delivery: {
@@ -26,6 +31,7 @@ export interface IStoreSettings extends Document {
     };
     serviceability: {
       selfDeliveryPincodes: string[];
+      selfDeliveryPincodeDistances: ISelfDeliveryPincodeDistance[];
       courierPincodes: string[];
     };
     cancellation: {
@@ -133,6 +139,14 @@ const StoreSettingsSchema = new Schema<IStoreSettings>(
           required: true,
           default: [],
         },
+        selfDeliveryPincodeDistances: {
+          type: [{
+            pincode: { type: String, required: true, trim: true, maxlength: 6 },
+            distanceKm: { type: Number, required: true, min: 0, max: 1000 },
+          }],
+          required: true,
+          default: [],
+        },
         courierPincodes: {
           type: [String],
           required: true,
@@ -181,6 +195,7 @@ export const DEFAULT_STORE_SETTINGS = {
     },
     serviceability: {
       selfDeliveryPincodes: [],
+      selfDeliveryPincodeDistances: [],
       courierPincodes: [],
     },
     cancellation: {
