@@ -375,6 +375,8 @@ export async function createPaymentOrderAction(
         discountPaise,
         couponCode: appliedCouponCode,
         shippingPaise,
+        gstRegistered,
+
         deliveryMethod: deliveryQuote.method,
         deliveryDistanceKm: deliveryQuote.distanceKm,
         taxPaise,
