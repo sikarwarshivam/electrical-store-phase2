@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ChevronRight, Search } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -96,12 +96,14 @@ export default async function CategoryPage({
 
         {category.imageUrl ? (
           <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900">
-<img
+<Image
               src={category.imageUrl}
               alt={category.name}
+              width={1600}
+              height={900}
+              sizes="100vw"
               className="max-h-72 w-full object-cover"
-              loading="eager"
-              decoding="async"
+              priority
             />
             <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-neutral-950/55 via-neutral-950/20 to-transparent" />
             <div className="absolute inset-y-0 left-0 flex max-w-xl flex-col justify-center px-6 py-8 text-white sm:px-10">
