@@ -1,10 +1,29 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { ProductCard } from "@/components/store/product-card";
 import { getPublicBrands, getPublicCategories, getPublicProducts } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const filtered = Boolean(params.q || params.spec || params.category || params.brand || params.sort);
+
+  return {
+    title: filtered ? "Product search" : "Products",
+    description: "Browse electrical products by category, brand, price, and technical specification.",
+    alternates: {
+      canonical: "/products",
+    },
+    robots: filtered ? { index: false, follow: true } : undefined,
+  };
+}
 
 const sortOptions = [
   { value: "newest", label: "Newest" },

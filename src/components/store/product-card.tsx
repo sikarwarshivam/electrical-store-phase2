@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, PackageSearch } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -26,12 +26,12 @@ export function ProductCard({ product }: { product: PublicProductCard }) {
       <Link href={"/products/" + product.slug} className="block">
         <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-900">
           {primaryImage ? (
-<img
+            <Image
               src={primaryImage}
               alt={product.images.find((image) => image.url === primaryImage)?.alt || product.name}
-              className="h-full w-full object-contain p-5 transition-transform duration-300 group-hover:scale-105"
-              loading="lazy"
-              decoding="async"
+              fill
+              sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+              className="object-contain p-5 transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-neutral-400">

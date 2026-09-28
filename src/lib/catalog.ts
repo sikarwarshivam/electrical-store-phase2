@@ -710,6 +710,42 @@ export async function getPublicProducts(options: {
   };
 }
 
+export async function getPublicSitemapData() {
+  await connectToDatabase();
+
+  const [categories, activeVariantProductIds] = await Promise.all([
+    Category.find({ isActive: true })
+      .select("_id slug updatedAt")
+      .sort({ slug: 1 })
+      .lean(),
+    ProductVariant.distinct("product", { status: "ACTIVE" }),
+  ]);
+
+  const categoryIds = categories.map((category) => category._id);
+
+  const products = categoryIds.length
+    ? await Product.find({
+        status: "ACTIVE",
+        category: { $in: categoryIds },
+        _id: { $in: activeVariantProductIds },
+      })
+        .select("_id slug updatedAt")
+        .sort({ slug: 1 })
+        .lean()
+    : [];
+
+  return {
+    categories: categories.map((category) => ({
+      slug: category.slug,
+      updatedAt: category.updatedAt,
+    })),
+    products: products.map((product) => ({
+      slug: product.slug,
+      updatedAt: product.updatedAt,
+    })),
+  };
+}
+
 export const getPublicProductBySlug = cache(async function getPublicProductBySlug(slug: string) {
   await connectToDatabase();
 

@@ -1,5 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ChevronRight, Package, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { PageContainer } from "@/components/layout/page-container";
@@ -7,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/store/product-card";
 import { ProductPurchasePanel } from "@/components/store/product-purchase-panel";
 import { getPublicProductBySlug } from "@/lib/catalog";
+import { siteConfig } from "@/config/site";
 import { getProductWishlistState } from "@/actions/wishlist";
 
 export const dynamic = "force-dynamic";
@@ -30,13 +32,30 @@ export async function generateMetadata({
     return { title: "Product not found" };
   }
 
+  const description =
+    product.shortDescription ||
+    product.description.slice(0, 160) ||
+    "Electrical product details, specifications, pricing, and stock information.";
+
   return {
     title: product.name,
-    description:
-      product.shortDescription ||
-      product.description.slice(0, 160) ||
-      "Electrical product details, specifications, pricing, and stock information.",
-  };
+    description,
+    alternates: {
+      canonical: "/products/" + product.slug,
+    },
+    openGraph: {
+      type: "website",
+      title: product.name,
+      description,
+      url: "/products/" + product.slug,
+      images: product.images.length > 0
+        ? product.images.map((image) => ({
+            url: image.url,
+            alt: image.alt || product.name,
+          }))
+        : undefined,
+    },
+  } satisfies Metadata;
 }
 
 export default async function ProductPage({
@@ -66,8 +85,54 @@ export default async function ProductPage({
     groupedAttributes.set(group, list);
   }
 
+  const offerPrices = product.variants.map((variant) => variant.pricePaise);
+  const availableVariants = product.variants.filter(
+    (variant) => variant.stockStatus !== "OUT_OF_STOCK"
+  );
+  const aggregateAvailability =
+    availableVariants.length === 0
+      ? "https://schema.org/OutOfStock"
+      : availableVariants.some((variant) => variant.stockStatus === "IN_STOCK")
+        ? "https://schema.org/InStock"
+        : "https://schema.org/LimitedAvailability";
+
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description:
+      product.shortDescription ||
+      product.description.slice(0, 500) ||
+      "Electrical product details and specifications.",
+    image: product.images
+      .filter((image) => /^https?:\/\//i.test(image.url))
+      .map((image) => image.url),
+    url: new URL("/products/" + product.slug, siteConfig.url).toString(),
+    brand: product.brand
+      ? {
+          "@type": "Brand",
+          name: product.brand.name,
+        }
+      : undefined,
+    category: product.category.name,
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "INR",
+      lowPrice: (Math.min(...offerPrices) / 100).toFixed(2),
+      highPrice: (Math.max(...offerPrices) / 100).toFixed(2),
+      offerCount: product.variants.length,
+      availability: aggregateAvailability,
+    },
+  };
+
   return (
     <PageContainer>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <div className="space-y-8">
         <nav className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
           <Link href="/" className="hover:text-amber-700 dark:hover:text-amber-400">
@@ -92,12 +157,14 @@ export default async function ProductPage({
           <div className="space-y-4">
             <div className="group relative overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
               {primaryImage ? (
-<img
+<Image
                   src={primaryImage}
                   alt={sortedImages[0]?.alt || product.name}
+                  width={1200}
+                  height={1200}
+                  sizes="(min-width: 1024px) 50vw, 100vw"
                   className="aspect-square w-full object-contain p-8 transition-transform duration-500 group-hover:scale-105 sm:p-12"
-                  loading="eager"
-                  decoding="async"
+                  priority
                 />
               ) : (
                 <div className="flex aspect-square items-center justify-center bg-neutral-100 text-neutral-400 dark:bg-neutral-900">
@@ -117,12 +184,13 @@ export default async function ProductPage({
                     className="overflow-hidden rounded-lg border border-neutral-200 bg-white p-2 hover:border-amber-400 dark:border-neutral-800 dark:bg-neutral-950"
                     title="Open image"
                   >
-<img
+<Image
                       src={image.url}
                       alt={image.alt || product.name}
+                      width={400}
+                      height={400}
+                      sizes="(min-width: 640px) 20vw, 25vw"
                       className="aspect-square w-full object-contain"
-                      loading="lazy"
-                      decoding="async"
                     />
                   </a>
                 ))}

@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test:phase1": "node scripts/test-phase1.mjs",
     "test:phase2": "node scripts/test-phase2.mjs",
+    "test:seo": "node scripts/test-seo.mjs",
     "seed:demo": "node scripts/seed-demo-catalog.mjs"
   },
   "dependencies": {
