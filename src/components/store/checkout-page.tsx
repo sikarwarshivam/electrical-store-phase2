@@ -53,6 +53,7 @@ interface AddressState {
   landmark: string;
   city: string;
   state: string;
+  gstin: string;
 }
 
 const initialAddress: AddressState = {
@@ -65,6 +66,7 @@ const initialAddress: AddressState = {
   landmark: "",
   city: "",
   state: "",
+  gstin: "",
 };
 
 function validPhone(value: string) {
@@ -194,6 +196,7 @@ export function CheckoutPage() {
       landmark: saved.landmark,
       city: saved.city,
       state: saved.state,
+      gstin: address.gstin,
     });
     setSelectedSavedAddressId(saved.id);
     setSubmitted(false);
@@ -722,6 +725,7 @@ export function CheckoutPage() {
                   ["fullName", "Full name", "text"],
                   ["phone", "Phone", "tel"],
                   ["email", "Email (optional)", "email"],
+                  ["gstin", "GSTIN (optional)", "text"],
                   ["pincode", "Pincode", "text"],
                   ["house", "House / Flat", "text"],
                   ["street", "Street / Locality", "text"],
@@ -753,14 +757,18 @@ export function CheckoutPage() {
                             ? sanitizeDigits(rawValue, 10)
                             : field === "pincode"
                               ? sanitizeDigits(rawValue, 6)
-                              : rawValue;
+                              : field === "gstin"
+                                ? rawValue.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15)
+                                : rawValue;
 
                       updateField(field, value);
                     }}
                     inputMode={
                       field === "phone" || field === "pincode"
                         ? "numeric"
-                        : undefined
+                        : field === "gstin"
+                          ? "text"
+                          : undefined
                     }
                     pattern={
                       field === "fullName"
@@ -778,7 +786,9 @@ export function CheckoutPage() {
                           ? 10
                           : field === "pincode"
                             ? 6
-                            : undefined
+                            : field === "gstin"
+                              ? 15
+                              : undefined
                     }
                     autoComplete={
                       field === "fullName"
@@ -801,7 +811,8 @@ export function CheckoutPage() {
             {submitted && !addressComplete ? (
               <p className="mt-4 text-xs font-medium text-red-600">
                 Enter a valid 10-digit Indian phone number, 6-digit pincode,
-                and all required address fields.
+                and all required address fields. GSTIN is optional but must be
+                valid when entered.
               </p>
             ) : null}
           </section>
