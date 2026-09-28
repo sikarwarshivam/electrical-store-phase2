@@ -549,11 +549,32 @@ function boundedLevenshtein(a: string, b: string, maxDistance: number): number {
   return previous[b.length];
 }
 
-function searchTokenScore(queryToken: string, candidateToken: string): { score: number; fuzzy: boolean } {
+function expandedSearchTokenVariants(token: string): string[] {
+  const singular = singularSearchToken(token);
+  const variants = new Set<string>([token, singular]);
+
+  if (singular.length > 3) {
+    variants.add(singular + "s");
+  }
+
+  return Array.from(variants);
+}
+
+function singularSearchText(value: string): string {
+  return searchTokens(value)
+    .map(singularSearchToken)
+    .join(" ");
+}
+
+function searchTokenScore(
+  queryToken: string,
+  candidateToken: string
+): { score: number; fuzzy: boolean } {
   const query = singularSearchToken(queryToken);
   const candidate = singularSearchToken(candidateToken);
 
   if (query === candidate) return { score: 50, fuzzy: false };
+
   if (candidate.startsWith(query) || query.startsWith(candidate)) {
     return { score: 34, fuzzy: false };
   }
@@ -570,10 +591,18 @@ function searchTokenScore(queryToken: string, candidateToken: string): { score: 
   };
 }
 
-function scoreSearchCandidate(queryText: string, candidate: SearchCandidate): Omit<SearchMatch, "id"> {
+function scoreSearchCandidate(
+  queryText: string,
+  candidate: SearchCandidate
+): Omit<SearchMatch, "id"> {
   const queryTokens = searchTokens(queryText);
+
   if (queryTokens.length === 0) {
-    return { score: 0, name: candidate.name || candidate.title || "", fuzzy: false };
+    return {
+      score: 0,
+      name: candidate.name || candidate.title || "",
+      fuzzy: false,
+    };
   }
 
   const fields = [
@@ -604,13 +633,27 @@ function scoreSearchCandidate(queryText: string, candidate: SearchCandidate): Om
   ];
 
   const normalizedWholeQuery = normalizeSearchText(queryText);
-  const normalizedName = normalizeSearchText(candidate.name || candidate.title || "");
+  const normalizedName = normalizeSearchText(
+    candidate.name || candidate.title || ""
+  );
   const compactQuery = normalizedWholeQuery.replace(/ /g, "");
   const compactName = normalizedName.replace(/ /g, "");
+  const singularQuery = singularSearchText(queryText);
+  const singularName = singularSearchText(candidate.name || candidate.title || "");
 
   let score = 0;
   let matchedTokens = 0;
   let fuzzy = false;
+
+  // Normalize singular/plural forms before scoring so "exhaust fans" matches
+  // "Exhaust Fan 200mm" naturally.
+  if (singularQuery && singularName.includes(singularQuery)) {
+    score += 180;
+  }
+
+  if (normalizedName.includes(normalizedWholeQuery)) {
+    score += 110;
+  }
 
   for (const queryToken of queryTokens) {
     let bestScore = 0;
@@ -627,6 +670,7 @@ function scoreSearchCandidate(queryText: string, candidate: SearchCandidate): Om
       for (const candidateToken of searchTokens(normalizedField)) {
         const result = searchTokenScore(queryToken, candidateToken);
         const weightedScore = result.score * field.weight;
+
         if (weightedScore > bestScore) {
           bestScore = weightedScore;
           bestFuzzy = result.fuzzy;
@@ -642,6 +686,7 @@ function scoreSearchCandidate(queryText: string, candidate: SearchCandidate): Om
   }
 
   const requiredMatches = Math.max(1, Math.ceil(queryTokens.length * 0.6));
+
   if (matchedTokens < requiredMatches) {
     return {
       score: 0,
@@ -650,9 +695,13 @@ function scoreSearchCandidate(queryText: string, candidate: SearchCandidate): Om
     };
   }
 
-  if (normalizedName.includes(normalizedWholeQuery)) score += 110;
-  if (compactQuery && compactName.includes(compactQuery)) score += 55;
-  if (matchedTokens === queryTokens.length) score += 45;
+  if (compactQuery && compactName.includes(compactQuery)) {
+    score += 55;
+  }
+
+  if (matchedTokens === queryTokens.length) {
+    score += 45;
+  }
 
   return {
     score,
@@ -674,12 +723,16 @@ async function findPublicSearchMatches(
   })
     .populate("category", "name")
     .populate("brand", "name")
-    .select("_id name slug shortDescription description searchKeywords attributes category brand")
+    .select(
+      "_id name slug shortDescription description searchKeywords attributes category brand"
+    )
     .limit(5000)
-    .lean()) as unknown as Array<SearchCandidate & {
-    category?: { name?: string };
-    brand?: { name?: string };
-  }>;
+    .lean()) as unknown as Array<
+    SearchCandidate & {
+      category?: { name?: string };
+      brand?: { name?: string };
+    }
+  >;
 
   const variantCandidates = (await ProductVariant.find({
     status: "ACTIVE",
@@ -697,7 +750,9 @@ async function findPublicSearchMatches(
       categoryName: candidate.category?.name,
       brandName: candidate.brand?.name,
     };
+
     const scored = scoreSearchCandidate(normalized, enrichedCandidate);
+
     if (scored.score <= 0) continue;
 
     scores.set(stringId(candidate._id), {
@@ -712,6 +767,7 @@ async function findPublicSearchMatches(
     if (!candidate.product) continue;
 
     const scored = scoreSearchCandidate(normalized, candidate);
+
     if (scored.score <= 0) continue;
 
     const id = stringId(candidate.product);
@@ -726,29 +782,35 @@ async function findPublicSearchMatches(
     });
   }
 
-  // A second, deterministic pass catches ordinary multi-word searches even
-  // when the richer fuzzy candidate scoring has no result (for example
-  // "exhaust fans" against "Exhaust Fan 200mm").
+  // Deterministic exact-token fallback. This handles normal ecommerce queries
+  // such as "exhaust fans" even when the fuzzy scorer has no candidate.
   if (scores.size === 0) {
     const queryTokens = searchTokens(normalized);
-    const exactTokenConditions = queryTokens.map((token) => {
-      const regex = new RegExp(escapeRegex(token), "i");
+    const searchableFields = [
+      "name",
+      "slug",
+      "shortDescription",
+      "description",
+      "searchKeywords",
+    ];
+
+    const tokenConditions = queryTokens.map((token) => {
+      const regexes = expandedSearchTokenVariants(token).map(
+        (variant) => new RegExp(escapeRegex(variant), "i")
+      );
+
       return {
-        $or: [
-          { name: regex },
-          { slug: regex },
-          { shortDescription: regex },
-          { description: regex },
-          { searchKeywords: regex },
-        ],
+        $or: searchableFields.flatMap((field) =>
+          regexes.map((regex) => ({ [field]: regex }))
+        ),
       };
     });
 
-    if (exactTokenConditions.length > 0) {
+    if (tokenConditions.length > 0) {
       const directCandidates = (await Product.find({
         status: "ACTIVE",
         _id: { $in: allowedProductIds },
-        $and: exactTokenConditions,
+        $and: tokenConditions,
       })
         .select("_id name")
         .limit(100)
