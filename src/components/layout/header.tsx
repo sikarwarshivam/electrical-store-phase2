@@ -10,7 +10,6 @@ import {
   LogOut,
   Menu,
   Package,
-  Search,
   ShoppingCart,
   ShieldAlert,
   User,
@@ -22,6 +21,7 @@ import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useUIStore } from "@/stores/ui-store";
+import { PredictiveSearch } from "@/components/store/predictive-search";
 
 const primaryNav = [
   { title: "Products", href: "/products" },
@@ -105,25 +105,9 @@ export function Header() {
           </div>
         </Link>
 
-        <form
-          action="/products"
-          method="get"
-          className="hidden min-w-0 flex-1 md:flex"
-          role="search"
-        >
-          <label className="sr-only" htmlFor="desktop-product-search">
-            Search products
-          </label>
-          <div className="relative w-full max-w-2xl">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-            <input
-              id="desktop-product-search"
-              name="q"
-              placeholder="Search products, brands or SKU..."
-              className="h-10 w-full rounded-lg border border-neutral-200 bg-neutral-50 pl-9 pr-4 text-sm text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/15 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-950"
-            />
-          </div>
-        </form>
+        <div className="hidden min-w-0 flex-1 md:flex">
+          <PredictiveSearch />
+        </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           <Link
@@ -301,25 +285,9 @@ export function Header() {
         </div>
       </div>
 
-      <form
-        action="/products"
-        method="get"
-        className="border-t border-neutral-100 px-4 py-2.5 md:hidden dark:border-neutral-900"
-        role="search"
-      >
-        <label className="sr-only" htmlFor="mobile-product-search">
-          Search products
-        </label>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-          <input
-            id="mobile-product-search"
-            name="q"
-            placeholder="Search products, brands or SKU..."
-            className="h-10 w-full rounded-lg border border-neutral-200 bg-neutral-50 pl-9 pr-3 text-sm text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/15 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-950"
-          />
-        </div>
-      </form>
+      <div className="border-t border-neutral-100 px-4 py-2.5 md:hidden dark:border-neutral-900">
+        <PredictiveSearch mobile />
+      </div>
 
       {isMobileMenuOpen ? (
         <div className="border-t border-neutral-100 bg-white px-4 pb-4 pt-2 md:hidden dark:border-neutral-900 dark:bg-neutral-950">
