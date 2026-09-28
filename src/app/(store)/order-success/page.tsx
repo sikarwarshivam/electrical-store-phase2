@@ -39,12 +39,14 @@ export default async function OrderSuccessPage({
         </p>
         <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
           <Link href="/account/orders"><Button>My orders</Button></Link>
-          <Link href={"/account/orders/" + encodeURIComponent(order.orderNumber) + "/invoice"}>
-            <Button variant="outline">
-              <FileText className="mr-1.5 h-4 w-4" />
-              View invoice
-            </Button>
-          </Link>
+          {order.customer.userId ? (
+            <Link href={"/account/orders/" + encodeURIComponent(order.orderNumber) + "/invoice"}>
+              <Button variant="outline">
+                <FileText className="mr-1.5 h-4 w-4" />
+                View invoice
+              </Button>
+            </Link>
+          ) : null}
           <Link href="/track-order"><Button variant="outline">Track order</Button></Link>
           <Link href="/products"><Button variant="outline">Continue shopping</Button></Link>
         </div>
