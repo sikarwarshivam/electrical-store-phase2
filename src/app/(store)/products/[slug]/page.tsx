@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/store/product-card";
 import { ProductPurchasePanel } from "@/components/store/product-purchase-panel";
 import { getPublicProductBySlug } from "@/lib/catalog";
+import { siteConfig } from "@/config/site";
 import { getProductWishlistState } from "@/actions/wishlist";
 
 export const dynamic = "force-dynamic";
@@ -103,8 +104,10 @@ export default async function ProductPage({
       product.shortDescription ||
       product.description.slice(0, 500) ||
       "Electrical product details and specifications.",
-    image: product.images.map((image) => image.url),
-    url: new URL("/products/" + product.slug, process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").toString(),
+    image: product.images
+      .filter((image) => /^https?:\/\//i.test(image.url))
+      .map((image) => image.url),
+    url: new URL("/products/" + product.slug, siteConfig.url).toString(),
     brand: product.brand
       ? {
           "@type": "Brand",
