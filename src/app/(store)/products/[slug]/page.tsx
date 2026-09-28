@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ChevronRight, Package, ShieldCheck } from "lucide-react";
@@ -157,12 +157,14 @@ export default async function ProductPage({
           <div className="space-y-4">
             <div className="group relative overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
               {primaryImage ? (
-<img
+<Image
                   src={primaryImage}
                   alt={sortedImages[0]?.alt || product.name}
+                  width={1200}
+                  height={1200}
+                  sizes="(min-width: 1024px) 50vw, 100vw"
                   className="aspect-square w-full object-contain p-8 transition-transform duration-500 group-hover:scale-105 sm:p-12"
-                  loading="eager"
-                  decoding="async"
+                  priority
                 />
               ) : (
                 <div className="flex aspect-square items-center justify-center bg-neutral-100 text-neutral-400 dark:bg-neutral-900">
@@ -182,12 +184,13 @@ export default async function ProductPage({
                     className="overflow-hidden rounded-lg border border-neutral-200 bg-white p-2 hover:border-amber-400 dark:border-neutral-800 dark:bg-neutral-950"
                     title="Open image"
                   >
-<img
+<Image
                       src={image.url}
                       alt={image.alt || product.name}
+                      width={400}
+                      height={400}
+                      sizes="(min-width: 640px) 20vw, 25vw"
                       className="aspect-square w-full object-contain"
-                      loading="lazy"
-                      decoding="async"
                     />
                   </a>
                 ))}
