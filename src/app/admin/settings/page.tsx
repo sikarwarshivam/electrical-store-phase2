@@ -14,6 +14,10 @@ import {
   getStoreSettings,
   updateStoreDeliverySettingsAction,
 } from "@/actions/store-settings";
+import {
+  getStoreTaxProfile,
+  updateStoreTaxProfileAction,
+} from "@/actions/store-tax-settings";
 
 export const metadata = {
   title: "Store Settings",
@@ -33,7 +37,10 @@ export default async function AdminSettingsPage({
   searchParams: Promise<{ success?: string; error?: string }>;
 }) {
   const params = await searchParams;
-  const settings = await getStoreSettings();
+  const [settings, taxProfile] = await Promise.all([
+    getStoreSettings(),
+    getStoreTaxProfile(),
+  ]);
   const slabs = settings.delivery.selfDelivery.distanceSlabs;
 
   return (
@@ -448,19 +455,207 @@ export default async function AdminSettingsPage({
           </div>
         </form>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">GST / Invoicing</CardTitle>
-            <CardDescription>
-              Business GST details have not been entered yet.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-xs text-neutral-500">
-            GSTIN, registered business details, HSN codes, and GST rates will be
-            configured when the owner/accountant supplies the actual tax data.
-            No placeholder tax values are used for production invoicing.
-          </CardContent>
-        </Card>
+        <form action={updateStoreTaxProfileAction}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">GST / Invoicing</CardTitle>
+              <CardDescription>
+                Enter the actual legal business details supplied by the owner or
+                accountant. Do not use demo or placeholder GST data in production.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label htmlFor="tax-registration-status" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    GST registration
+                  </label>
+                  <select
+                    id="tax-registration-status"
+                    name="registrationStatus"
+                    defaultValue={taxProfile.registrationStatus}
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  >
+                    <option value="UNREGISTERED">Not GST registered</option>
+                    <option value="REGISTERED">GST registered</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="invoice-prefix" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Invoice prefix
+                  </label>
+                  <input
+                    id="invoice-prefix"
+                    name="invoicePrefix"
+                    maxLength={3}
+                    required
+                    defaultValue={taxProfile.invoicePrefix}
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm uppercase dark:border-neutral-700 dark:bg-neutral-900"
+                  />
+                  <p className="mt-1 text-xs text-neutral-500">
+                    1–3 characters. Invoice numbering resets by Indian financial year.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label htmlFor="legal-name" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Legal business name
+                  </label>
+                  <input
+                    id="legal-name"
+                    name="legalName"
+                    required
+                    defaultValue={taxProfile.legalName}
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="trade-name" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Trade name (optional)
+                  </label>
+                  <input
+                    id="trade-name"
+                    name="tradeName"
+                    defaultValue={taxProfile.tradeName}
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label htmlFor="gstin" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    GSTIN
+                  </label>
+                  <input
+                    id="gstin"
+                    name="gstin"
+                    maxLength={15}
+                    defaultValue={taxProfile.gstin}
+                    placeholder="Required when registered"
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm uppercase dark:border-neutral-700 dark:bg-neutral-900"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="business-state-code" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    State code
+                  </label>
+                  <input
+                    id="business-state-code"
+                    name="stateCode"
+                    maxLength={2}
+                    inputMode="numeric"
+                    required
+                    defaultValue={taxProfile.stateCode}
+                    placeholder="e.g. 09"
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="business-state" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Business state
+                  </label>
+                  <input
+                    id="business-state"
+                    name="state"
+                    required
+                    defaultValue={taxProfile.state}
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label htmlFor="business-address-1" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Business address
+                  </label>
+                  <input
+                    id="business-address-1"
+                    name="addressLine1"
+                    required
+                    defaultValue={taxProfile.addressLine1}
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="business-address-2" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Address line 2 (optional)
+                  </label>
+                  <input
+                    id="business-address-2"
+                    name="addressLine2"
+                    defaultValue={taxProfile.addressLine2}
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="business-city" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Business city
+                  </label>
+                  <input
+                    id="business-city"
+                    name="city"
+                    required
+                    defaultValue={taxProfile.city}
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="business-phone" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Business phone (optional)
+                  </label>
+                  <input
+                    id="business-phone"
+                    name="phone"
+                    defaultValue={taxProfile.phone}
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="business-email" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Business email (optional)
+                  </label>
+                  <input
+                    id="business-email"
+                    name="email"
+                    type="email"
+                    defaultValue={taxProfile.email}
+                    className="mt-1.5 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  />
+                </div>
+              </div>
+
+              <label className="flex items-start gap-3 rounded-md border border-neutral-200 bg-neutral-50 p-3 text-sm dark:border-neutral-800 dark:bg-neutral-900/50">
+                <input
+                  type="checkbox"
+                  name="reverseChargeApplicable"
+                  defaultChecked={taxProfile.reverseChargeApplicable}
+                  className="mt-0.5 h-4 w-4 rounded border-neutral-300"
+                />
+                <span>
+                  <span className="font-medium">Reverse charge applicable</span>
+                  <span className="mt-1 block text-xs text-neutral-500">
+                    Enable only when the owner/CA confirms this applies to the store's supplies.
+                  </span>
+                </span>
+              </label>
+
+              <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-900 dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-200">
+                For a GST-registered store, every taxable product must have its
+                HSN/SAC and GST rate configured before checkout and tax invoice
+                issuance. The application does not invent tax rates.
+              </div>
+
+              <div className="flex justify-end">
+                <Button type="submit">Save GST / invoicing settings</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </form>
       </div>
     </PageContainer>
   );
