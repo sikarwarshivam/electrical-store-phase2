@@ -150,7 +150,7 @@ export function ImageCarousel({
     <div
       ref={containerRef}
       className={`flex h-full w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
-      style={{ touchAction: "pan-x" }}
+      style={{ touchAction: "pan-x pan-y" }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       onPointerDown={(event) => {
