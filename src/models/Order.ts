@@ -185,6 +185,7 @@ export interface IOrder extends Document {
   shippingAddress: IOrderAddress;
   items: IOrderLine[];
   pricing: IOrderPricing;
+  invoice?: IOrderInvoice;
   status: OrderStatus;
   statusHistory: IOrderStatusHistoryEntry[];
   payment: IOrderPayment;
