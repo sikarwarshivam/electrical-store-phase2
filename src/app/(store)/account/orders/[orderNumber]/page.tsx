@@ -201,8 +201,18 @@ export default async function CustomerOrderDetailPage({
               </div>
               <div className="mt-5 space-y-2 border-t border-neutral-200 pt-4 text-sm dark:border-neutral-800">
                 <div className="flex justify-between"><span className="text-neutral-500">Subtotal</span><span>{formatINRFromPaise(order.pricing.subtotalPaise)}</span></div>
-                <div className="flex justify-between"><span className="text-neutral-500">Shipping</span><span>{formatINRFromPaise(order.pricing.shippingPaise)}</span></div>
-                <div className="flex justify-between"><span className="text-neutral-500">Tax</span><span>{formatINRFromPaise(order.pricing.taxAddedPaise)}</span></div>
+                {order.pricing.discountPaise > 0 ? (
+                  <div className="flex justify-between"><span className="text-neutral-500">Discount</span><span className="text-emerald-700 dark:text-emerald-400">- {formatINRFromPaise(order.pricing.discountPaise)}</span></div>
+                ) : null}
+                <div className="flex justify-between"><span className="text-neutral-500">Delivery</span><span>{order.pricing.shippingPaise === 0 ? "FREE" : formatINRFromPaise(order.pricing.shippingPaise)}</span></div>
+                {order.pricing.deliveryMethod ? (
+                  <div className="flex justify-between"><span className="text-neutral-500">Delivery method</span><span>{order.pricing.deliveryMethod === "SELF_DELIVERY" ? "Local delivery" : "Courier delivery"}</span></div>
+                ) : null}
+                {order.pricing.taxAddedPaise > 0 ? (
+                  <div className="flex justify-between"><span className="text-neutral-500">GST</span><span>{formatINRFromPaise(order.pricing.taxAddedPaise)}</span></div>
+                ) : order.pricing.taxIncludedPaise > 0 ? (
+                  <div className="flex justify-between"><span className="text-neutral-500">GST (included)</span><span>{formatINRFromPaise(order.pricing.taxIncludedPaise)}</span></div>
+                ) : null}
                 <div className="flex justify-between border-t border-neutral-200 pt-3 text-base font-bold dark:border-neutral-800"><span>Total</span><span>{formatINRFromPaise(order.pricing.grandTotalPaise)}</span></div>
               </div>
               <div className="mt-5 border-t border-neutral-200 pt-4 text-sm dark:border-neutral-800">
