@@ -49,15 +49,21 @@ export function PredictiveSearch({ mobile = false }: PredictiveSearchProps) {
 
   useEffect(() => {
     const trimmed = query.trim();
-
-    if (trimmed.length < 2) {
-      return;
-    }
-
     const controller = new AbortController();
-    setLoading(true);
 
     const timer = window.setTimeout(async () => {
+      if (trimmed.length < 2) {
+        setSuggestions([]);
+        setCategories([]);
+        setDidYouMean(null);
+        setLoading(false);
+        setOpen(false);
+        setActiveIndex(-1);
+        return;
+      }
+
+      setLoading(true);
+
       try {
         const response = await fetch(
           "/api/search/suggestions?q=" + encodeURIComponent(trimmed),
