@@ -16,7 +16,6 @@ import {
   Truck,
 } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { reconcileCartAction } from "@/actions/cart";

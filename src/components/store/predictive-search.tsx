@@ -42,26 +42,28 @@ export function PredictiveSearch({ mobile = false }: PredictiveSearchProps) {
   const [isOpen, setOpen] = useState(false);
   const [isLoading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const correctionIndex = suggestions.length + categories.length;
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
     const trimmed = query.trim();
-
-    if (trimmed.length < 2) {
-      setSuggestions([]);
-      setCategories([]);
-      setDidYouMean(null);
-      setLoading(false);
-      setOpen(false);
-      return;
-    }
-
     const controller = new AbortController();
-    setLoading(true);
 
     const timer = window.setTimeout(async () => {
+      if (trimmed.length < 2) {
+        setSuggestions([]);
+        setCategories([]);
+        setDidYouMean(null);
+        setLoading(false);
+        setOpen(false);
+        setActiveIndex(-1);
+        return;
+      }
+
+      setLoading(true);
+
       try {
         const response = await fetch(
           "/api/search/suggestions?q=" + encodeURIComponent(trimmed),
@@ -106,8 +108,6 @@ export function PredictiveSearch({ mobile = false }: PredictiveSearchProps) {
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    const correctionIndex =
-      suggestions.length + categories.length;
     const itemCount =
       suggestions.length + categories.length + (didYouMean ? 1 : 0);
 
@@ -205,7 +205,6 @@ export function PredictiveSearch({ mobile = false }: PredictiveSearchProps) {
             " dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-950"
           }
           aria-autocomplete="list"
-          aria-expanded={isOpen}
           aria-controls={`predictive-search-results-${mobile ? "mobile" : "desktop"}`}
         />
 
