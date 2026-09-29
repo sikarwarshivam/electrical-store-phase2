@@ -67,7 +67,7 @@ export function ProductCard({ product }: { product: PublicProductCard }) {
                 variant="outline"
                 className="bg-white/90 px-2 py-0.5 text-[10px] backdrop-blur-sm dark:bg-neutral-950/90"
               >
-                {product.variants.length} options
+                {product.variantCount} options
               </Badge>
             ) : null}
           </div>
@@ -119,7 +119,6 @@ export function ProductCard({ product }: { product: PublicProductCard }) {
                 </span>
               ) : null}
             </div>
-            <p className="mt-0.5 text-[10px] text-neutral-400">Inclusive of applicable taxes</p>
           </div>
 
           <Link
