@@ -149,7 +149,7 @@ export async function GET(request: Request) {
       .filter((category) => category.score > 0)
       .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
       .slice(0, 4)
-      .map(({ score, ...category }) => category);
+      .map(({ id, name, slug }) => ({ id, name, slug }));
 
     const candidateNames = [
       ...products.map((product) => product.name),
