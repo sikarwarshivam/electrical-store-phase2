@@ -7,6 +7,7 @@ import { signOut, useSession } from "next-auth/react";
 import {
   ChevronDown,
   Grid2X2,
+  Home,
   LogOut,
   Menu,
   Package,
