@@ -89,7 +89,17 @@ export function Header() {
         <Link
           href="/"
           onClick={closeMenus}
-          className="flex shrink-0 items-center gap-2.5"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:border-amber-800 dark:hover:bg-amber-950/30 dark:hover:text-amber-300"
+          aria-label="Home"
+          title="Home"
+        >
+          <Home className="h-4 w-4" />
+        </Link>
+
+        <Link
+          href="/"
+          onClick={closeMenus}
+          className="flex min-w-0 shrink-0 items-center gap-2.5"
           aria-label={`${siteConfig.name} home`}
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-600 text-white shadow-sm">
