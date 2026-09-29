@@ -474,6 +474,7 @@ type SearchCandidate = {
   title?: string;
   options?: Array<{ name?: string; value?: string }>;
   categoryName?: string;
+  subcategoryName?: string;
   brandName?: string;
 };
 
@@ -612,6 +613,7 @@ function scoreSearchCandidate(
     { text: candidate.slug || "", weight: 3 },
     { text: (candidate.searchKeywords || []).join(" "), weight: 4 },
     { text: candidate.categoryName || "", weight: 4 },
+    { text: candidate.subcategoryName || "", weight: 5 },
     { text: candidate.brandName || "", weight: 3 },
     { text: candidate.shortDescription || "", weight: 2 },
     { text: candidate.description || "", weight: 1 },
@@ -722,14 +724,16 @@ async function findPublicSearchMatches(
     _id: { $in: allowedProductIds },
   })
     .populate("category", "name")
+    .populate("subcategory", "name")
     .populate("brand", "name")
     .select(
-      "_id name slug shortDescription description searchKeywords attributes category brand"
+      "_id name slug shortDescription description searchKeywords attributes category subcategory brand"
     )
     .limit(5000)
     .lean()) as unknown as Array<
     SearchCandidate & {
       category?: { name?: string };
+      subcategory?: { name?: string };
       brand?: { name?: string };
     }
   >;
@@ -748,6 +752,7 @@ async function findPublicSearchMatches(
     const enrichedCandidate: SearchCandidate = {
       ...candidate,
       categoryName: candidate.category?.name,
+      subcategoryName: candidate.subcategory?.name,
       brandName: candidate.brand?.name,
     };
 
